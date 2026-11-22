@@ -31,6 +31,29 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .habit.dragging{transition:none;box-shadow:0 14px 30px rgba(70,90,70,.18);cursor:grabbing}
 .habit.swiped-right{transform:translateX(18px);border-color:#a8d6a5;box-shadow:0 12px 28px rgba(65,150,75,.24)}
 .habit.swiped-left{transform:translateX(-18px);border-color:#d8cbdc;box-shadow:0 12px 28px rgba(85,55,94,.20)}
+.habit::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;z-index:2}
+.habit::after{position:absolute;right:22px;top:15px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 21px/1 Arial,sans-serif;opacity:0;transform:scale(.4);pointer-events:none;z-index:4}
+.habit.done-animation::before{background:rgba(50,190,75,.17);animation:complete-wash .72s ease-out}
+.habit.done-animation::after{content:"✓";color:#fff;background:#20b52b;animation:status-pop .65s cubic-bezier(.2,.9,.25,1.35) both}
+.habit.undo-animation::before{background:rgba(145,117,157,.16);animation:undo-wash .72s ease-out}
+.habit.undo-animation::after{content:"↶";color:#fff;background:#887294;animation:status-pop .65s cubic-bezier(.2,.9,.25,1.35) both}
+.habit.done-animation .segment.done{animation:segment-confirm .48s ease-out both}
+.habit.undo-animation .segment{animation:segment-undo .42s ease-out both}
+.habit.done-animation .segment:nth-child(2),.habit.undo-animation .segment:nth-child(2){animation-delay:.035s}
+.habit.done-animation .segment:nth-child(3),.habit.undo-animation .segment:nth-child(3){animation-delay:.07s}
+.habit.done-animation .segment:nth-child(4),.habit.undo-animation .segment:nth-child(4){animation-delay:.105s}
+.habit.done-animation .segment:nth-child(5),.habit.undo-animation .segment:nth-child(5){animation-delay:.14s}
+.habit.done-animation .segment:nth-child(6),.habit.undo-animation .segment:nth-child(6){animation-delay:.175s}
+.habit.done-animation .segment:nth-child(7),.habit.undo-animation .segment:nth-child(7){animation-delay:.21s}
+.habit.done-animation .segment:nth-child(8),.habit.undo-animation .segment:nth-child(8){animation-delay:.245s}
+.habit.done-animation .segment:nth-child(9),.habit.undo-animation .segment:nth-child(9){animation-delay:.28s}
+.habit.done-animation .segment:nth-child(10),.habit.undo-animation .segment:nth-child(10){animation-delay:.315s}
+@keyframes complete-wash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+@keyframes undo-wash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+@keyframes status-pop{0%{opacity:0;transform:scale(.35) rotate(-18deg)}55%{opacity:1;transform:scale(1.18) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes segment-confirm{0%{transform:scaleY(.55);filter:brightness(1.5)}65%{transform:scaleY(1.18)}100%{transform:scaleY(1);filter:brightness(1)}}
+@keyframes segment-undo{0%{transform:scaleY(1.35);filter:brightness(1.25)}100%{transform:scaleY(1);filter:brightness(1)}}
+@media(prefers-reduced-motion:reduce){.habit.done-animation::before,.habit.undo-animation::before,.habit.done-animation::after,.habit.undo-animation::after,.habit.done-animation .segment,.habit.undo-animation .segment{animation:none;opacity:1;transform:none}}
 @media(max-width:650px){.habit.swiped-right{transform:translateX(12px)}.habit.swiped-left{transform:translateX(-12px)}}
 .habit-top,.progress{position:relative;z-index:3}
 .habit-top{height:80px;display:grid;grid-template-columns:102px 1fr auto;align-items:center;column-gap:42px}
@@ -190,10 +213,10 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     const map=habitData.get(card.dataset.name);
     map.set(key(selectedDate),!!done);
     updateCard(card);
-    card.classList.remove('swiped-left','swiped-right');
+    card.classList.remove('swiped-left','swiped-right','done-animation','undo-animation');
     void card.offsetWidth;
-    card.classList.add(done?'swiped-right':'swiped-left');
-    window.setTimeout(()=>card.classList.remove('swiped-left','swiped-right'),520);
+    card.classList.add(done?'swiped-right':'swiped-left',done?'done-animation':'undo-animation');
+    window.setTimeout(()=>card.classList.remove('swiped-left','swiped-right','done-animation','undo-animation'),760);
   }
   document.getElementById('prev').addEventListener('click',()=>{
     selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()-1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth(),0).getDate()));
