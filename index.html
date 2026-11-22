@@ -10,20 +10,26 @@
 :root{--ink:#101114;--muted:#55535e;--green:#20b52b;--track:#e8deec;--page:#fff8fc}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
-body{background-color:var(--page);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 80px,rgba(199,177,205,.20) 81px,transparent 82px),linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,245,252,.18));}
-.page{width:100%;max-width:880px;min-height:100vh;margin:0 auto;padding:70px 17px 100px;position:relative;overflow:hidden}
+body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,245,252,.18));}
+.page{width:100%;max-width:880px;min-height:100vh;margin:0 auto;padding:70px 17px 100px;position:relative;overflow:hidden;isolation:isolate}
+.guides{position:absolute;z-index:2;top:0;bottom:0;left:46px;right:46px;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:9px;pointer-events:none}
+.guides span{position:relative}
+.guides span:before{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed rgba(185,165,194,.23)}
 .month-head{height:65px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 36px}
 .month-title{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:42px;line-height:1;letter-spacing:-1.6px;text-align:center;margin:0}
 .month-nav{width:62px;height:62px;border:0;border-radius:28px;background:#e9eee8;color:#092b17;display:grid;place-items:center;cursor:pointer;padding:0}
 .month-nav:last-child{justify-self:end}
 .month-nav svg{width:34px;height:34px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .month-nav:focus-visible,.day:focus-visible,.segment:focus-visible{outline:3px solid #668b69;outline-offset:3px}
-.days{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;margin-top:25px;height:94px;align-items:start}
+.days{position:relative;z-index:3;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:9px;padding:0 29px;margin-top:25px;height:94px;align-items:start}
 .day{border:0;background:transparent;color:#55535e;border-radius:30px;height:93px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:11px 0 0;cursor:pointer;font:600 20px/1.15 Arial,Helvetica,sans-serif;min-width:0}
 .day .num{font-size:33px;font-weight:500;margin-top:8px;line-height:1}
 .day.selected{background:#8cae8a;color:white;padding-top:11px}
 .habits{margin-top:95px;display:flex;flex-direction:column;gap:31px}
-.habit{height:181px;border-radius:40px;border:1.5px solid var(--edge);background:var(--surface);box-shadow:0 8px 18px rgba(85,55,94,.075);padding:23px 29px 28px;position:relative}
+.habit{height:181px;border-radius:40px;border:1.5px solid var(--edge);background:var(--surface);box-shadow:0 8px 18px rgba(85,55,94,.075);padding:23px 29px 28px;position:relative;z-index:1;touch-action:pan-y;transition:transform .18s ease,box-shadow .18s ease}
+.habit.swiped-right{transform:translateX(7px);box-shadow:0 10px 24px rgba(65,130,75,.16)}
+.habit.swiped-left{transform:translateX(-7px);box-shadow:0 10px 24px rgba(85,55,94,.12)}
+.habit-top,.progress{position:relative;z-index:3}
 .habit-top{height:80px;display:grid;grid-template-columns:102px 1fr auto;align-items:center;column-gap:42px}
 .icon-tile{width:102px;height:80px;border-radius:30px;background:var(--icon-bg);display:grid;place-items:center}
 .icon-tile svg{width:62px;height:62px;stroke:var(--icon-color);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
@@ -38,11 +44,12 @@ body{background-color:var(--page);background-image:repeating-linear-gradient(90d
 .pushups{--surface:rgba(244,249,242,.78);--edge:#e1eee0;--icon-bg:rgba(222,235,216,.62);--icon-color:#0c351b}
 @media(max-width:650px){
  .page{padding:34px 12px 60px}
+ .guides{left:27px;right:27px;gap:5px}
  .month-head{padding:0 8px;height:56px}
  .month-title{font-size:clamp(27px,6vw,38px)}
  .month-nav{width:48px;height:48px;border-radius:21px}
  .month-nav svg{width:27px;height:27px}
- .days{margin-top:20px;height:76px;gap:2px}
+ .days{margin-top:20px;height:76px;gap:5px;padding:0 15px}
  .day{height:76px;padding-top:9px;font-size:clamp(10px,2.8vw,16px);border-radius:22px}
  .day .num{font-size:clamp(17px,4.3vw,25px);margin-top:7px}
  .habits{margin-top:65px;gap:18px}
@@ -65,6 +72,7 @@ body{background-color:var(--page);background-image:repeating-linear-gradient(90d
 </head>
 <body class="notranslate">
 <main class="page">
+  <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <header class="month-head">
     <button class="month-nav" id="prev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></svg></button>
     <h1 class="month-title" id="month">November</h1>
@@ -124,24 +132,96 @@ body{background-color:var(--page);background-image:repeating-linear-gradient(90d
 <script>
 (() => {
   const monthEl = document.getElementById('month');
+  const daysEl = document.getElementById('days');
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  let monthIndex = 10, year = 2025;
-  function shiftMonth(delta){monthIndex+=delta;if(monthIndex<0){monthIndex=11;year--}if(monthIndex>11){monthIndex=0;year++}monthEl.textContent=months[monthIndex];}
-  document.getElementById('prev').addEventListener('click',()=>shiftMonth(-1));
-  document.getElementById('next').addEventListener('click',()=>shiftMonth(1));
-  document.querySelectorAll('.day').forEach(day=>day.addEventListener('click',()=>{
-    document.querySelectorAll('.day').forEach(d=>{d.classList.remove('selected');d.removeAttribute('aria-current')});
-    day.classList.add('selected');day.setAttribute('aria-current','date');
-  }));
-  document.querySelectorAll('.habit').forEach(card=>{
-    const segments=[...card.querySelectorAll('.segment')], label=card.querySelector('.percent');
-    segments.forEach((segment,i)=>{segment.addEventListener('click',()=>{
-      segment.classList.toggle('done');
-      segment.setAttribute('aria-label', 'Day '+(i+1)+(segment.classList.contains('done')?' complete':' incomplete'));
-      const completed=segments.filter(s=>s.classList.contains('done')).length;
-      label.textContent=Math.round(completed/segments.length*100)+'%';
-    })});
+  const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let selectedDate = new Date(2025, 10, 22);
+  const key = d => [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+  const shift = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+  const visibleDates = () => Array.from({length:10},(_,i)=>shift(selectedDate,i-9));
+  const habitData = new Map();
+  const patterns = {
+    'Reading': {visible:[1,1,0,1,1,0,1,1,0,1],total:21},
+    'Meditation': {visible:[1,0,1,1,1,0,0,1,0,0],total:18},
+    'Water': {visible:[1,1,0,1,1,1,1,1,1,1],total:27},
+    'Push-ups': {visible:[1,1,0,1,1,0,1,1,0,0],total:23}
+  };
+  function initializeHistory(){
+    document.querySelectorAll('.habit').forEach(card=>{
+      const name=card.dataset.name, spec=patterns[name], map=new Map();
+      const first20=spec.total-spec.visible.reduce((a,b)=>a+b,0);
+      for(let i=0;i<20;i++) map.set(key(shift(selectedDate,i-29)),i<first20);
+      spec.visible.forEach((v,i)=>map.set(key(shift(selectedDate,i-9)),!!v));
+      habitData.set(name,map);
+    });
+  }
+  function updateCard(card){
+    const map=habitData.get(card.dataset.name), dates=visibleDates();
+    const segments=[...card.querySelectorAll('.segment')];
+    segments.forEach((segment,i)=>{
+      const done=!!map.get(key(dates[i]));
+      segment.classList.toggle('done',done);
+      segment.setAttribute('aria-label',''+key(dates[i])+ (done?' complete':' incomplete'));
+    });
+    const start=shift(selectedDate,-29);
+    let completed=0;
+    for(let i=0;i<30;i++) if(map.get(key(shift(start,i)))) completed++;
+    card.querySelector('.percent').textContent=Math.round(completed/30*100)+'%';
+  }
+  function renderCalendar(){
+    monthEl.textContent=months[selectedDate.getMonth()];
+    daysEl.innerHTML='';
+    visibleDates().forEach(date=>{
+      const btn=document.createElement('button');
+      btn.className='day'+(key(date)===key(selectedDate)?' selected':'');
+      if(key(date)===key(selectedDate)) btn.setAttribute('aria-current','date');
+      btn.innerHTML='<span>'+weekday[date.getDay()]+'</span><span class="num">'+date.getDate()+'</span>';
+      btn.addEventListener('click',()=>{
+        selectedDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+        renderCalendar(); document.querySelectorAll('.habit').forEach(updateCard);
+      });
+      daysEl.appendChild(btn);
+    });
+  }
+  function mark(card,done){
+    const map=habitData.get(card.dataset.name);
+    map.set(key(selectedDate),!!done);
+    updateCard(card);
+    card.classList.remove('swiped-left','swiped-right');
+    void card.offsetWidth;
+    card.classList.add(done?'swiped-right':'swiped-left');
+    window.setTimeout(()=>card.classList.remove('swiped-left','swiped-right'),220);
+  }
+  document.getElementById('prev').addEventListener('click',()=>{
+    selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()-1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth(),0).getDate()));
+    renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
   });
+  document.getElementById('next').addEventListener('click',()=>{
+    selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()+1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth()+2,0).getDate()));
+    renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
+  });
+  document.querySelectorAll('.habit').forEach(card=>{
+    const segments=[...card.querySelectorAll('.segment')];
+    segments.forEach((segment,i)=>segment.addEventListener('click',()=>{
+      const map=habitData.get(card.dataset.name),date=visibleDates()[i];
+      map.set(key(date),!map.get(key(date)));updateCard(card);
+    }));
+    let startX=0,startY=0,tracking=false;
+    card.addEventListener('pointerdown',e=>{
+      if(e.target.closest('.segment')) return;
+      startX=e.clientX;startY=e.clientY;tracking=true;
+    });
+    card.addEventListener('pointerup',e=>{
+      if(!tracking)return;tracking=false;
+      const dx=e.clientX-startX,dy=e.clientY-startY;
+      if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25) mark(card,dx>0);
+    });
+    card.addEventListener('pointercancel',()=>tracking=false);
+    updateCard(card);
+  });
+  initializeHistory();
+  renderCalendar();
+  document.querySelectorAll('.habit').forEach(updateCard);
 })();
 </script>
 </body>
