@@ -24,7 +24,7 @@ scripts.forEach((match, index) => {
 });
 
 for (const id of ['habitList', 'habitForm', 'completedStat', 'dayProgress', 'week']) {
-  if (!new RegExp('id=["\\']' + id + '["\\']').test(html)) {
+  if (!html.includes(`id="${id}"`) && !html.includes(`id='${id}'`)) {
     failures.push(`Required UI element #${id} is missing`);
   }
 }
