@@ -200,6 +200,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()+1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth()+2,0).getDate()));
     renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
   });
+  initializeHistory();
   document.querySelectorAll('.habit').forEach(card=>{
     const segments=[...card.querySelectorAll('.segment')];
     segments.forEach((segment,i)=>segment.addEventListener('click',()=>{
@@ -219,7 +220,6 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     card.addEventListener('pointercancel',()=>tracking=false);
     updateCard(card);
   });
-  initializeHistory();
   renderCalendar();
   document.querySelectorAll('.habit').forEach(updateCard);
 })();
