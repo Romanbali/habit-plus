@@ -27,8 +27,11 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .day.selected{background:#8cae8a;color:white;padding-top:11px}
 .habits{margin-top:95px;display:flex;flex-direction:column;gap:31px}
 .habit{height:181px;border-radius:40px;border:1.5px solid var(--edge);background:var(--surface);box-shadow:0 8px 18px rgba(85,55,94,.075);padding:23px 29px 28px;position:relative;z-index:1;touch-action:pan-y;transition:transform .18s ease,box-shadow .18s ease}
-.habit.swiped-right{transform:translateX(7px);box-shadow:0 10px 24px rgba(65,130,75,.16)}
-.habit.swiped-left{transform:translateX(-7px);box-shadow:0 10px 24px rgba(85,55,94,.12)}
+.habit{transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease,border-color .28s ease}
+.habit.dragging{transition:none;box-shadow:0 14px 30px rgba(70,90,70,.18);cursor:grabbing}
+.habit.swiped-right{transform:translateX(18px);border-color:#a8d6a5;box-shadow:0 12px 28px rgba(65,150,75,.24)}
+.habit.swiped-left{transform:translateX(-18px);border-color:#d8cbdc;box-shadow:0 12px 28px rgba(85,55,94,.20)}
+@media(max-width:650px){.habit.swiped-right{transform:translateX(12px)}.habit.swiped-left{transform:translateX(-12px)}}
 .habit-top,.progress{position:relative;z-index:3}
 .habit-top{height:80px;display:grid;grid-template-columns:102px 1fr auto;align-items:center;column-gap:42px}
 .icon-tile{width:102px;height:80px;border-radius:30px;background:var(--icon-bg);display:grid;place-items:center}
@@ -190,7 +193,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     card.classList.remove('swiped-left','swiped-right');
     void card.offsetWidth;
     card.classList.add(done?'swiped-right':'swiped-left');
-    window.setTimeout(()=>card.classList.remove('swiped-left','swiped-right'),220);
+    window.setTimeout(()=>card.classList.remove('swiped-left','swiped-right'),520);
   }
   document.getElementById('prev').addEventListener('click',()=>{
     selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()-1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth(),0).getDate()));
@@ -207,13 +210,26 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     card.addEventListener('pointerdown',e=>{
       if(e.target.closest('.segment')) return;
       startX=e.clientX;startY=e.clientY;tracking=true;
+      card.classList.add('dragging');
+      try{card.setPointerCapture(e.pointerId)}catch(_){}
+    });
+    card.addEventListener('pointermove',e=>{
+      if(!tracking)return;
+      const dx=e.clientX-startX,dy=e.clientY-startY;
+      if(Math.abs(dx)>Math.abs(dy)*0.8){
+        const shift=Math.max(-72,Math.min(72,dx*0.72));
+        card.style.transform='translateX('+shift+'px)';
+      }
     });
     card.addEventListener('pointerup',e=>{
       if(!tracking)return;tracking=false;
       const dx=e.clientX-startX,dy=e.clientY-startY;
-      if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25) mark(card,dx>0);
+      card.classList.remove('dragging');card.style.transform='';
+      if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)*1.05) mark(card,dx>0);
     });
-    card.addEventListener('pointercancel',()=>tracking=false);
+    card.addEventListener('pointercancel',()=>{
+      tracking=false;card.classList.remove('dragging');card.style.transform='';
+    });
     updateCard(card);
   });
   renderCalendar();
