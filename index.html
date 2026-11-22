@@ -203,10 +203,6 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
   initializeHistory();
   document.querySelectorAll('.habit').forEach(card=>{
     const segments=[...card.querySelectorAll('.segment')];
-    segments.forEach((segment,i)=>segment.addEventListener('click',()=>{
-      const map=habitData.get(card.dataset.name),date=visibleDates()[i];
-      map.set(key(date),!map.get(key(date)));updateCard(card);
-    }));
     let startX=0,startY=0,tracking=false;
     card.addEventListener('pointerdown',e=>{
       if(e.target.closest('.segment')) return;
