@@ -12,7 +12,7 @@ for (const tag of ['html', 'head', 'body', 'title', 'main', 'script']) {
   const close = (html.match(new RegExp('</' + tag + '\\s*>', 'gi')) || []).length;
   if (!open || open !== close) failures.push(`Expected balanced <${tag}> tags (open: ${open}, close: ${close})`);
 }
-const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+const scripts = [...html.matchAll(/<script\\b[^>]*>([\s\S]*?)<\/script>/gi)];
 if (!scripts.length) failures.push('No inline JavaScript found in index.html');
 
 scripts.forEach((match, index) => {
