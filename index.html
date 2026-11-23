@@ -107,6 +107,11 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .auth-panel input:focus{border-color:#8cae8a;box-shadow:0 0 0 3px rgba(140,174,138,.16)}
 .auth-panel button{width:100%;height:48px;border:0;border-radius:13px;background:#8cae8a;color:white;font-weight:700;font-size:15px;cursor:pointer}
 .auth-panel button:disabled{opacity:.6;cursor:wait}
+.auth-google{display:flex!important;align-items:center;justify-content:center;gap:11px;width:100%;height:48px;border:1px solid #ded9df!important;background:#fff!important;color:#262329!important;border-radius:13px;margin:14px 0 0;font-weight:700;font-size:15px;cursor:pointer}
+.auth-google svg{width:19px;height:19px;flex:none}
+.auth-divider{display:flex;align-items:center;gap:12px;color:#999;font-size:12px;margin:14px 0 2px}
+.auth-divider:before,.auth-divider:after{content:"";height:1px;background:#e9e4e9;flex:1}
+
 .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f3f0f3;padding:5px;border-radius:13px;margin:18px 0}
 .auth-tabs button{height:40px;background:transparent;color:#777}
 .auth-tabs button.active{background:#fff;color:#262329;box-shadow:0 1px 4px #00000012}
@@ -323,6 +328,8 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     <h2 id="auth-title">Welcome to Habit Plus</h2>
     <p id="auth-description">Sign in to sync your habits securely across all your devices.</p>
     <div class="auth-tabs" id="auth-tabs"><button type="button" class="active" id="auth-tab-login">Sign in</button><button type="button" id="auth-tab-signup">Create account</button></div>
+    <button class="auth-google" id="auth-google" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z" transform="translate(0 4) scale(1)"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.75 7.18l7.73 6C44.42 37.99 46.98 31.92 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z" transform="translate(0 4)"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.14 1.43-4.89 2.28-8.18 2.28-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z" transform="translate(0 -4)"/></svg><span>Continue with Google</span></button>
+    <div class="auth-divider">or continue with email</div>
     <form id="auth-form">
       <input id="auth-email" type="email" autocomplete="email" placeholder="Email address" required>
       <div class="auth-password-wrap"><input id="auth-password" type="password" autocomplete="current-password" placeholder="Password (at least 8 characters)" minlength="8" required><button class="auth-show-password" id="auth-show-password" type="button">Show</button></div>
@@ -362,6 +369,17 @@ function setAuthMode(mode){
  $('auth-password').autocomplete=signup?'new-password':'current-password';
  $('auth-message').textContent='';
 }
+$('auth-google').addEventListener('click',async()=>{
+ if(authBusy)return;
+ authBusy=true;$('auth-google').disabled=true;$('auth-message').textContent='Connecting to Google…';
+ try{
+  const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://romanbali.github.io/habit-plus/'}});
+  if(error)throw error;
+ }catch(error){
+  $('auth-message').textContent=error.message||'Google sign-in is not configured yet.';
+  authBusy=false;$('auth-google').disabled=false;
+ }
+});
 $('auth-tab-login').addEventListener('click',()=>setAuthMode('login'));
 $('auth-tab-signup').addEventListener('click',()=>setAuthMode('signup'));
 $('auth-forgot').addEventListener('click',()=>setAuthMode('reset'));
