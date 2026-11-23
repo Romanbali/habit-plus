@@ -227,6 +227,7 @@ body.authenticated .welcome-screen{display:none}
   const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const STORAGE_KEY = 'habit-plus-state-v1';
   let selectedDate = new Date();
+  let viewedMonth = new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
   function saveState(){
     try{
       const habits={};
@@ -240,6 +241,7 @@ body.authenticated .welcome-screen{display:none}
       // Always select today's local date, even when no local state exists yet.
       const now=new Date();
       selectedDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      viewedMonth=new Date(now.getFullYear(),now.getMonth(),1);
       return saved?.habits && typeof saved.habits==='object' ? saved.habits : {};
     }catch(error){console.warn('Could not load saved habit data',error);return {};}
   }
@@ -270,7 +272,7 @@ body.authenticated .welcome-screen{display:none}
   }
   function updateCard(card){
     const map=habitData.get(card.dataset.name);
-    const year=selectedDate.getFullYear(),month=selectedDate.getMonth();
+    const year=viewedMonth.getFullYear(),month=viewedMonth.getMonth();
     const daysInMonth=new Date(year,month+1,0).getDate();
     const progress=card.querySelector('.progress');
     progress.innerHTML='';
@@ -290,7 +292,7 @@ body.authenticated .welcome-screen{display:none}
     card.querySelector('.percent').textContent=Math.round(completed/30*100)+'%';
   }
   function renderCalendar(){
-    const year=selectedDate.getFullYear(),month=selectedDate.getMonth();
+    const year=viewedMonth.getFullYear(),month=viewedMonth.getMonth();
     monthEl.textContent=months[month]+' '+year;
     daysEl.innerHTML='';
     const todayKey=key(new Date());
@@ -311,34 +313,39 @@ body.authenticated .welcome-screen{display:none}
       btn.append(weekdayLabel,number);
       btn.addEventListener('click',()=>{
         selectedDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
-        saveState();renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
+        viewedMonth=new Date(date.getFullYear(),date.getMonth(),1);
+        saveState();renderCalendar();
       });
       daysEl.appendChild(btn);
     }
     document.querySelectorAll('.habit').forEach(updateCard);
     syncProgressScroll();
   }
-  function syncProgressScroll(){
+  let syncingCalendarScroll=false;
+  function syncProgressScroll(source=null){
     const daysWindow=document.getElementById('days-window');
     const progressWindows=[...document.querySelectorAll('.progress-window')];
     if(!daysWindow)return;
-    const sync=source=>{
-      const max=source.scrollWidth-source.clientWidth;
-      const ratio=max>0?source.scrollLeft/max:0;
-      progressWindows.forEach(target=>{
-        if(target!==source){
-          const targetMax=target.scrollWidth-target.clientWidth;
-          target.scrollLeft=ratio*targetMax;
-        }
-      });
-    };
     if(!daysWindow.dataset.syncBound){
-      daysWindow.addEventListener('scroll',()=>sync(daysWindow),{passive:true});
-      progressWindows.forEach(w=>w.addEventListener('scroll',()=>sync(w),{passive:true}));
+      const syncFrom=source=>{
+        if(syncingCalendarScroll)return;
+        syncingCalendarScroll=true;
+        const position=source.scrollLeft;
+        [daysWindow,...progressWindows].forEach(target=>{
+          if(target!==source && Math.abs(target.scrollLeft-position)>1)target.scrollLeft=position;
+        });
+        syncingCalendarScroll=false;
+      };
+      daysWindow.addEventListener('scroll',()=>syncFrom(daysWindow),{passive:true});
+      progressWindows.forEach(w=>w.addEventListener('scroll',()=>syncFrom(w),{passive:true}));
       daysWindow.dataset.syncBound='1';
     }
-    const ratio=(daysWindow.scrollWidth-daysWindow.clientWidth)>0?daysWindow.scrollLeft/(daysWindow.scrollWidth-daysWindow.clientWidth):0;
-    progressWindows.forEach(w=>{const max=w.scrollWidth-w.clientWidth;w.scrollLeft=ratio*Math.max(0,max);});
+    const position=source?source.scrollLeft:daysWindow.scrollLeft;
+    syncingCalendarScroll=true;
+    [daysWindow,...progressWindows].forEach(target=>{
+      if(Math.abs(target.scrollLeft-position)>1)target.scrollLeft=position;
+    });
+    syncingCalendarScroll=false;
   }
   function alignTodayOnInitialLoad(){
     const todayKey=key(new Date());
@@ -363,10 +370,16 @@ body.authenticated .welcome-screen{display:none}
     card.classList.add(done?'swiped-right':'swiped-left',done?'done-animation':'undo-animation');
     window.setTimeout(()=>card.classList.remove('swiped-left','swiped-right','done-animation','undo-animation'),760);
   }
-  document.getElementById('prev').addEventListener('click',()=>{
-    selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()-1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth(),0).getDate()));
-    saveState();renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
-  });
+  function changeMonth(offset){
+    const year=viewedMonth.getFullYear(),month=viewedMonth.getMonth()+offset;
+    const nextMonth=new Date(year,month,1);
+    const lastDay=new Date(nextMonth.getFullYear(),nextMonth.getMonth()+1,0).getDate();
+    selectedDate=new Date(nextMonth.getFullYear(),nextMonth.getMonth(),Math.min(selectedDate.getDate(),lastDay));
+    viewedMonth=nextMonth;
+    saveState();
+    renderCalendar();
+  }
+  document.getElementById('prev').addEventListener('click',()=>changeMonth(-1));
   document.getElementById('days-window').addEventListener('wheel',e=>{
     if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
       e.currentTarget.scrollLeft+=e.deltaY;
@@ -374,10 +387,7 @@ body.authenticated .welcome-screen{display:none}
     }
   },{passive:false});
 
-  document.getElementById('next').addEventListener('click',()=>{
-    selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()+1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth()+2,0).getDate()));
-    saveState();renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
-  });
+  document.getElementById('next').addEventListener('click',()=>changeMonth(1));
   const savedHabits=loadState();
   initializeHistory(savedHabits);
   document.querySelectorAll('.habit').forEach(card=>{
