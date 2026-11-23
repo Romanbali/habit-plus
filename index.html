@@ -98,6 +98,11 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .account-bar{position:absolute;top:18px;right:18px;z-index:20;display:flex;align-items:center;gap:9px}
 .account-status{font-size:12px;color:#68636c}
 .account-button{border:1px solid #ded7df;background:#fff;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:700;color:#28242b}
+.auth-backdrop{position:fixed;inset:0;z-index:100;background:rgba(25,20,28,.38);display:none;align-items:center;justify-content:center;padding:20px}
+.auth-backdrop.open{display:flex}
+.auth-panel{width:min(100%,390px);background:#fff;border-radius:24px;padding:28px;box-shadow:0 20px 70px rgba(20,10,30,.2)}
+.auth-panel h2{font-size:24px;margin:0 0 8px}
+.auth-panel p{font-size:14px;line-height:1.5;color:#666;margin:0 0 20px}
 .auth-panel input{width:100%;height:50px;border:1px solid #ddd5df;border-radius:13px;padding:0 14px;font-size:16px;margin-bottom:12px;outline:none}
 .auth-panel input:focus{border-color:#8cae8a;box-shadow:0 0 0 3px rgba(140,174,138,.16)}
 .auth-panel button{width:100%;height:48px;border:0;border-radius:13px;background:#8cae8a;color:white;font-weight:700;font-size:15px;cursor:pointer}
@@ -115,6 +120,8 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .auth-show-password{position:absolute!important;right:7px;top:5px;width:auto!important;height:38px!important;padding:0 10px!important;background:transparent!important;color:#777!important;font-size:12px!important}
 .auth-links{display:flex;justify-content:flex-end;margin:-2px 0 14px}
 .auth-link{width:auto!important;height:auto!important;background:transparent!important;color:#6b8269!important;padding:4px!important;font-size:13px!important}
+.auth-message{font-size:13px;line-height:1.45;color:#62566a;min-height:20px;margin-top:12px;overflow-wrap:anywhere}
+.auth-close{margin-top:8px;background:transparent!important;color:#777!important}
 @media(max-width:650px){.page{padding-top:76px}.account-bar{top:12px;right:14px}.account-status{display:none}}
 
 .tracker-content{display:none}
@@ -203,6 +210,7 @@ body.authenticated .welcome-screen{display:none}
       <div class="welcome-mark">H</div>
       <h1>Habit Plus</h1>
       <p>Your habits. Your progress. All in sync.</p>
+      <div class="welcome-message" id="welcome-message" role="status" aria-live="polite"></div>
       <button class="auth-google welcome-google" id="welcome-google" type="button"><span class="google-g">G</span> Continue with Google</button>
       <div class="welcome-foot">Your progress stays private and syncs across your devices.</div>
     </div>
@@ -346,3 +354,133 @@ body.authenticated .welcome-screen{display:none}
 })();
 </script>
 
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+const SUPABASE_URL='https://ifhavtkexjpfgjhmyrxp.supabase.co';
+const SUPABASE_KEY='sb_publishable_ZIcZYPUOIh_tX0Y29F_yjA_yq4oja_d';
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storage:window.localStorage,storageKey:'habit-plus-google-session',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const STORAGE_KEY='habit-plus-state-v1';
+const defaults=[['Reading','reading',0],['Meditation','meditation',1],['Water','water',2],['Push-ups','push-ups',3]];
+const $=id=>document.getElementById(id);
+let currentUser=null, syncing=false, hydrating=false, habitIds={};
+const status=(s)=>$('cloud-status').textContent=s;
+let authBusy=false;
+async function startGoogleSignIn(){
+ if(authBusy)return;
+ authBusy=true;$('welcome-google').disabled=true;$('welcome-message').textContent='Connecting to Google…';
+ try{
+  const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://romanbali.github.io/habit-plus/'}});
+  if(error)throw error;
+ }catch(error){
+  $('welcome-message').textContent=error.message||'Google sign-in is unavailable. Please try again.';
+  authBusy=false;$('welcome-google').disabled=false;
+ }
+}
+$('welcome-google').addEventListener('click',startGoogleSignIn);
+$('account-button').addEventListener('click',async()=>{
+ if(currentUser){if(confirm('Sign out of Habit Plus on this device?')) await supabase.auth.signOut();}
+ else startGoogleSignIn();
+});
+async function ensureHabits(){
+ const {data,error}=await supabase.from('habits').select('id,habit_key,name,sort_order').order('sort_order');
+ if(error)throw error;
+ if(!data.length){
+  const rows=defaults.map(([name,slug,sort_order])=>({name,habit_key:slug,sort_order}));
+  const {error:insertError}=await supabase.from('habits').insert(rows);
+  if(insertError)throw insertError;
+  return ensureHabits();
+ }
+ data.forEach(h=>habitIds[h.name]=h.id);
+}
+function dateKey(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function fromLocalDate(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+async function loadCloud(){
+ status('Loading cloud data…');
+ await ensureHabits();
+ const [{data:rows,error:readError},{data:settings,error:settingsError}]=await Promise.all([
+  supabase.from('habit_completions').select('habit_id,completed_on,is_completed'),
+  supabase.from('user_settings').select('selected_date').maybeSingle()
+ ]);
+ if(readError)throw readError;if(settingsError)throw settingsError;
+ const today=dateKey(new Date());
+ const legacy=(()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null}})();
+ const migrating=rows.length===0 && legacy?.habits && Object.keys(legacy.habits).length>0;
+ const selected=settings?.selected_date||(migrating&&legacy.selectedDate?legacy.selectedDate:today);
+ const local={};
+ defaults.forEach(([name])=>{
+  local[name]={};
+  const start=fromLocalDate(selected);
+  for(let i=29;i>=0;i--){const d=new Date(start);d.setDate(d.getDate()-i);local[name][dateKey(d)]=false;}
+ });
+ const idToName=Object.fromEntries(Object.entries(habitIds).map(([n,id])=>[id,n]));
+ if(migrating){
+  const importRows=[];
+  for(const [name,dates] of Object.entries(legacy.habits)){
+   const habit_id=habitIds[name];if(!habit_id)continue;
+   for(const [completed_on,value] of Object.entries(dates||{})){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(completed_on)){
+     local[name][completed_on]=value===true;
+     importRows.push({user_id:currentUser.id,habit_id,completed_on,is_completed:value===true});
+    }
+   }
+  }
+  if(importRows.length){
+   const {error:importError}=await supabase.from('habit_completions').upsert(importRows,{onConflict:'user_id,habit_id,completed_on'});
+   if(importError)throw importError;
+  }
+ }
+ rows.forEach(row=>{const name=idToName[row.habit_id];if(name)local[name][row.completed_on]=row.is_completed;});
+ const serialized=JSON.stringify({selectedDate:selected,habits:local});
+ if(localStorage.getItem(STORAGE_KEY)!==serialized){
+  hydrating=true;localStorage.setItem(STORAGE_KEY,serialized);hydrating=false;
+  status(migrating?'Imported browser history':'Synced');
+  location.reload();
+ }else status('Synced');
+}
+async function syncLocalState(raw){
+ if(!currentUser||syncing||hydrating)return;
+ let state;try{state=JSON.parse(raw);}catch{return;}
+ syncing=true;status('Saving…');
+ try{
+  const rows=[];
+  for(const [name,dates] of Object.entries(state.habits||{})){
+   const habit_id=habitIds[name];if(!habit_id)continue;
+   for(const [completed_on,value] of Object.entries(dates||{})){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(completed_on))
+     rows.push({user_id:currentUser.id,habit_id,completed_on,is_completed:value===true,updated_at:new Date().toISOString()});
+   }
+  }
+  if(rows.length){
+   const {error}=await supabase.from('habit_completions').upsert(rows,{onConflict:'user_id,habit_id,completed_on'});
+   if(error)throw error;
+  }
+  const {error:settingsError}=await supabase.from('user_settings').upsert({user_id:currentUser.id,selected_date:state.selectedDate||dateKey(new Date()),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(settingsError)throw settingsError;
+  status('Synced');
+ }catch(error){console.error('Cloud sync failed',error);status('Sync error — check connection');}
+ finally{syncing=false;}
+}
+const originalSetItem=Storage.prototype.setItem;
+Storage.prototype.setItem=function(key,value){
+ originalSetItem.call(this,key,value);
+ if(key===STORAGE_KEY)syncLocalState(value);
+};
+async function onSession(session){
+ currentUser=session?.user||null;
+ document.body.classList.toggle('authenticated',!!currentUser);
+ if(currentUser){
+  $('account-button').textContent='Sign out';
+  try{await loadCloud();}catch(error){console.error(error);status('Cloud error');}
+ }else{
+  $('account-button').textContent='Sign in';
+  status('Not signed in');
+ }
+}
+supabase.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>onSession(session),0);});
+supabase.auth.getSession().then(({data,error})=>{
+ if(error){status('Connection error');return;}
+ onSession(data.session);
+});
+</script>
+</body>
+</html>
