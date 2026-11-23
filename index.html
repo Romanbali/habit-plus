@@ -232,10 +232,9 @@ body.authenticated .welcome-screen{display:none}
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
       if(!saved)return null;
-      if(typeof saved.selectedDate==='string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.selectedDate)){
-        const [y,m,d]=saved.selectedDate.split('-').map(Number);
-        selectedDate=new Date(y,m-1,d);
-      }
+      // Always open the calendar on today's date after a page refresh.
+      const now=new Date();
+      selectedDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
       return saved.habits && typeof saved.habits==='object' ? saved.habits : {};
     }catch(error){console.warn('Could not load saved habit data',error);return {};}
   }
@@ -302,7 +301,9 @@ body.authenticated .welcome-screen{display:none}
       daysEl.appendChild(btn);
     }
     const selected=daysEl.querySelector('.day.selected');
-    if(selected)selected.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    if(selected){
+      requestAnimationFrame(()=>{const windowEl=document.getElementById('days-window');windowEl.scrollLeft=selected.offsetLeft+selected.offsetWidth-windowEl.clientWidth;});
+    }
   }
   function mark(card,done){
     const map=habitData.get(card.dataset.name);
@@ -451,7 +452,7 @@ async function loadCloud(){
  const today=dateKey(new Date());
  const legacy=(()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null}})();
  const migrating=rows.length===0 && legacy?.habits && Object.keys(legacy.habits).length>0;
- const selected=settings?.selected_date||(migrating&&legacy.selectedDate?legacy.selectedDate:today);
+ const selected=today;
  const local={};
  defaults.forEach(([name])=>{
   local[name]={};
