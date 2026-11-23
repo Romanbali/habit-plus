@@ -357,15 +357,16 @@ body.authenticated .welcome-screen{display:none}
         if(syncingCalendarScroll)return;
         syncingCalendarScroll=true;
         const position=source.scrollLeft;
-        updateGuides();
         [daysWindow,...progressWindows].forEach(target=>{
           if(target!==source && Math.abs(target.scrollLeft-position)>1)target.scrollLeft=position;
         });
+        updateGuides();
         syncingCalendarScroll=false;
       };
       daysWindow.addEventListener('scroll',()=>syncFrom(daysWindow),{passive:true});
       progressWindows.forEach(w=>w.addEventListener('scroll',()=>syncFrom(w),{passive:true}));
       daysWindow.dataset.syncBound='1';
+      window.addEventListener('resize',updateGuides,{passive:true});
     }
     const position=source?source.scrollLeft:daysWindow.scrollLeft;
     syncingCalendarScroll=true;
