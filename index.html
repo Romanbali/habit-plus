@@ -340,7 +340,7 @@ $('auth-form').addEventListener('submit',async e=>{
  e.preventDefault();
  const email=$('auth-email').value.trim();
  $('auth-submit').disabled=true;$('auth-message').textContent='Sending secure sign-in link…';
- const {error}=await supabase.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+ const {error}=await supabase.auth.signInWithOtp({email,options:{emailRedirectTo:'https://romanbali.github.io/habit-plus/'}});
  $('auth-submit').disabled=false;
  $('auth-message').textContent=error?error.message:'Check your email and open the sign-in link on this device.';
 });
