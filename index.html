@@ -365,7 +365,9 @@ async function loadCloud(){
  ]);
  if(readError)throw readError;if(settingsError)throw settingsError;
  const today=dateKey(new Date());
- const selected=settings?.selected_date||today;
+ const legacy=(()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null}})();
+ const migrating=rows.length===0 && legacy?.habits && Object.keys(legacy.habits).length>0;
+ const selected=settings?.selected_date||(migrating&&legacy.selectedDate?legacy.selectedDate:today);
  const local={};
  defaults.forEach(([name])=>{
   local[name]={};
@@ -373,12 +375,29 @@ async function loadCloud(){
   for(let i=29;i>=0;i--){const d=new Date(start);d.setDate(d.getDate()-i);local[name][dateKey(d)]=false;}
  });
  const idToName=Object.fromEntries(Object.entries(habitIds).map(([n,id])=>[id,n]));
+ if(migrating){
+  const importRows=[];
+  for(const [name,dates] of Object.entries(legacy.habits)){
+   const habit_id=habitIds[name];if(!habit_id)continue;
+   for(const [completed_on,value] of Object.entries(dates||{})){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(completed_on)){
+     local[name][completed_on]=value===true;
+     importRows.push({user_id:currentUser.id,habit_id,completed_on,is_completed:value===true});
+    }
+   }
+  }
+  if(importRows.length){
+   const {error:importError}=await supabase.from('habit_completions').upsert(importRows,{onConflict:'user_id,habit_id,completed_on'});
+   if(importError)throw importError;
+  }
+ }
  rows.forEach(row=>{const name=idToName[row.habit_id];if(name)local[name][row.completed_on]=row.is_completed;});
- hydrating=true;
- localStorage.setItem(STORAGE_KEY,JSON.stringify({selectedDate:selected,habits:local}));
- hydrating=false;
- status('Synced');
- location.reload();
+ const serialized=JSON.stringify({selectedDate:selected,habits:local});
+ if(localStorage.getItem(STORAGE_KEY)!==serialized){
+  hydrating=true;localStorage.setItem(STORAGE_KEY,serialized);hydrating=false;
+  status(migrating?'Imported browser history':'Synced');
+  location.reload();
+ }else status('Synced');
 }
 async function syncLocalState(raw){
  if(!currentUser||syncing||hydrating)return;
