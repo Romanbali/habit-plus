@@ -339,15 +339,17 @@ body.authenticated .welcome-screen{display:none}
     const ratio=(daysWindow.scrollWidth-daysWindow.clientWidth)>0?daysWindow.scrollLeft/(daysWindow.scrollWidth-daysWindow.clientWidth):0;
     progressWindows.forEach(w=>{const max=w.scrollWidth-w.clientWidth;w.scrollLeft=ratio*Math.max(0,max);});
   }
-  function alignSelectedDay(){
-    const selected=daysEl.querySelector('.day.selected');
+  function alignTodayOnInitialLoad(){
+    const todayKey=key(new Date());
+    const todayButton=[...daysEl.querySelectorAll('.day')].find(button=>button.getAttribute('aria-label')?.includes(new Date().toLocaleDateString('en',{year:'numeric',month:'long',day:'numeric'})));
     const windowEl=document.getElementById('days-window');
-    if(!selected||!windowEl)return;
+    if(!todayButton||!windowEl)return;
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      const itemRect=selected.getBoundingClientRect();
+      const itemRect=todayButton.getBoundingClientRect();
       const windowRect=windowEl.getBoundingClientRect();
       const rightPadding=parseFloat(getComputedStyle(windowEl).paddingRight)||0;
       windowEl.scrollLeft+=itemRect.right-(windowRect.right-rightPadding);
+      syncProgressScroll();
     }));
   }
   function mark(card,done){
@@ -438,8 +440,8 @@ body.authenticated .welcome-screen{display:none}
     updateCard(card);
   });
   renderCalendar();
-  window.addEventListener('load',alignSelectedDay,{once:true});
-  window.addEventListener('pageshow',alignSelectedDay);
+  window.addEventListener('load',alignTodayOnInitialLoad,{once:true});
+  window.addEventListener('pageshow',event=>{if(event.persisted)alignTodayOnInitialLoad();});
   document.querySelectorAll('.habit').forEach(updateCard);
 })();
 </script>
