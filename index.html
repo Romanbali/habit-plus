@@ -22,12 +22,11 @@ body.authenticated .account-bar{display:flex}
 .month-nav{width:48px;height:48px;border:0;border-radius:18px;background:#e9eee8;color:#173d25;display:grid;place-items:center;cursor:pointer}
 .month-nav:last-child{justify-self:end}
 .month-nav svg{width:26px;height:26px;stroke:currentColor;stroke-width:2.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.timeline-viewport{margin-top:18px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x}
-.timeline-viewport::-webkit-scrollbar{display:none}
-.timeline-content{position:relative;width:max-content;min-width:100%;padding-bottom:8px}
-.date-row,.progress-row{display:grid;grid-template-columns:repeat(var(--days,30),var(--col));column-gap:var(--gap);width:max-content;position:relative;z-index:5}
+.timeline-viewport{margin-top:18px;overflow:hidden}
+.timeline-content{position:relative;width:100%;padding-bottom:8px}
+.date-row,.progress-row{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:var(--gap);width:100%;position:relative;z-index:5}
 .date-row{z-index:3;align-items:stretch;padding-bottom:3px}
-.day{width:var(--col);min-height:64px;border:0;border-radius:15px;background:rgba(255,255,255,.78);color:#55515c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:6px 0;user-select:none}
+.day{width:100%;min-width:0;min-height:64px;border:0;border-radius:15px;background:rgba(255,255,255,.78);color:#55515c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:6px 0;user-select:none}
 .day .weekday{font-size:10px;font-weight:700;color:#948d98;line-height:1}
 .day .num{font-size:20px;font-weight:600;line-height:1}
 .day.selected{background:#8cae8a;color:#fff}
@@ -46,10 +45,8 @@ body.authenticated .account-bar{display:flex}
 .habit-name{font-size:clamp(21px,4vw,31px);line-height:1;font-weight:700;letter-spacing:-.7px;white-space:nowrap}
 .percent{font-size:clamp(21px,4vw,30px);font-weight:600;color:#56535f;letter-spacing:-.8px}
 .progress-row{z-index:3;margin-top:12px;align-items:center}
-.segment{width:var(--col);height:22px;border:0;border-radius:15px;background:var(--track);padding:0;cursor:pointer;position:relative;z-index:3}
+.segment{width:100%;min-width:0;height:22px;border:0;border-radius:15px;background:var(--track);padding:0;cursor:pointer;position:relative;z-index:3}
 .segment.done{background:var(--green);box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
-.guides{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
-.guides span{position:absolute;top:67px;bottom:0;width:0;border-left:1px dashed rgba(155,133,165,.42)}
 .reading{--surface:rgba(245,231,250,.82);--edge:#f0e2f4;--icon-bg:rgba(226,208,238,.72);--icon-color:#55505d}
 .meditation{--surface:rgba(255,235,240,.84);--edge:#f8e1e8;--icon-bg:rgba(255,215,224,.72);--icon-color:#8d170f}
 .water{--surface:rgba(232,237,255,.86);--edge:#dfe5ff;--icon-bg:rgba(207,218,255,.72);--icon-color:#082b4c}
@@ -78,7 +75,6 @@ body.authenticated .account-bar{display:flex}
  .percent{font-size:clamp(18px,4.5vw,25px)}
  .progress-row{margin-top:10px}
  .segment{height:17px;border-radius:12px}
- .guides span{top:58px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 .tracker-content{display:none}
@@ -109,7 +105,6 @@ body.authenticated .welcome-screen{display:none}
    <div class="timeline-content" id="timeline-content">
     <nav class="date-row" id="dates" aria-label="Monthly calendar"></nav>
     <section class="habit-list" id="habit-list" aria-label="Habits"></section>
-    <div class="guides" id="guides" aria-hidden="true"></div>
    </div>
   </div>
  </div>
@@ -164,70 +159,42 @@ body.authenticated .welcome-screen{display:none}
   const habits={};names.forEach(name=>habits[name]=Object.fromEntries(data.get(name)));
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify({selectedDate:key(selectedDate),habits}));}catch(e){console.warn(e);}
  }
- function monthDates(){return new Date(viewedMonth.getFullYear(),viewedMonth.getMonth()+1,0).getDate();}
- function updateGuides(){
-  const guides=$('guides'),n=monthDates(),style=getComputedStyle($('timeline-content'));
-  const column=parseFloat(style.getPropertyValue('--col'))||58,gap=parseFloat(style.getPropertyValue('--gap'))||8;
-  guides.innerHTML='';
-  for(let i=0;i<n;i++){const line=document.createElement('span');line.style.left=(i*(column+gap)+column/2)+'px';guides.appendChild(line);}
- }
+ function visibleDates(){return Array.from({length:10},(_,i)=>shift(selectedDate,i-9));}
  function updatePercent(card){
   const map=data.get(card.dataset.name),start=shift(dayStart(new Date()),-29);let count=0;
   for(let i=0;i<30;i++)if(map.get(key(shift(start,i))))count++;
   card.querySelector('.percent').textContent=Math.round(count/30*100)+'%';
  }
  function renderCards(){
-  const list=$('habit-list');list.innerHTML='';
+  const list=$('habit-list');list.innerHTML='';const dates=visibleDates();
   names.forEach(name=>{
    const card=document.createElement('article');card.className='habit-card '+({'Reading':'reading','Meditation':'meditation','Water':'water','Push-ups':'pushups'}[name]);card.dataset.name=name;
    card.innerHTML='<div class="habit-top"><div class="icon-tile">'+icons[name]+'</div><div class="habit-name">'+name+'</div><div class="percent">0%</div></div><div class="progress-row" aria-label="'+name+' progress"></div>';
    const row=card.querySelector('.progress-row'),map=data.get(name);
-   for(let day=1;day<=monthDates();day++){
-    const date=new Date(viewedMonth.getFullYear(),viewedMonth.getMonth(),day),done=map.get(key(date))===true;
-    const segment=document.createElement('button');segment.type='button';segment.className='segment'+(done?' done':'');
-    segment.setAttribute('aria-label',key(date)+(done?' complete':' incomplete'));segment.title=date.toLocaleDateString('en',{month:'long',day:'numeric'})+(done?' — complete':' — incomplete');
-    row.appendChild(segment);
-   }
+   dates.forEach(date=>{const done=map.get(key(date))===true,segment=document.createElement('button');segment.type='button';segment.className='segment'+(done?' done':'');segment.setAttribute('aria-label',key(date)+(done?' complete':' incomplete'));segment.title=date.toLocaleDateString('en',{month:'long',day:'numeric'})+(done?' — complete':' — incomplete');row.appendChild(segment);});
    updatePercent(card);bindSwipe(card);list.appendChild(card);
   });
  }
  function renderDates(){
   const dates=$('dates');dates.innerHTML='';const todayKey=key(new Date());
-  dates.style.setProperty('--days',monthDates());
-  for(let day=1;day<=monthDates();day++){
-   const date=new Date(viewedMonth.getFullYear(),viewedMonth.getMonth(),day),dateKey=key(date),isToday=dateKey===todayKey,isFuture=dateKey>todayKey;
-   const button=document.createElement('button');button.type='button';button.className='day'+(dateKey===key(selectedDate)?' selected':'')+(isToday?' today':'')+(isFuture?' future':'');button.dataset.date=dateKey;
+  visibleDates().forEach(date=>{
+   const dateKey=key(date),isToday=dateKey===todayKey,isFuture=dateKey>todayKey,button=document.createElement('button');button.type='button';
+   button.className='day'+(dateKey===key(selectedDate)?' selected':'')+(isToday?' today':'')+(isFuture?' future':'');button.dataset.date=dateKey;
    button.setAttribute('aria-label',date.toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
-   button.innerHTML='<span class="weekday">'+weekdays[date.getDay()]+'</span><span class="num">'+day+'</span>';
-   button.addEventListener('click',()=>{selectedDate=dayStart(date);monthAnchorDay=day;saveState();dates.querySelectorAll('.day').forEach(el=>{const active=el.dataset.date===dateKey;el.classList.toggle('selected',active);if(active)el.setAttribute('aria-current','date');else el.removeAttribute('aria-current');});});
-   if(dateKey===key(selectedDate))button.setAttribute('aria-current','date');
-   dates.appendChild(button);
-  }
-  $('month').textContent=monthNames[viewedMonth.getMonth()]+' '+viewedMonth.getFullYear();
-  updateGuides();
+   button.innerHTML='<span class="weekday">'+weekdays[date.getDay()]+'</span><span class="num">'+date.getDate()+'</span>';
+   button.addEventListener('click',()=>{selectedDate=dayStart(date);monthAnchorDay=date.getDate();viewedMonth=new Date(date.getFullYear(),date.getMonth(),1);saveState();render();});
+   if(dateKey===key(selectedDate))button.setAttribute('aria-current','date');dates.appendChild(button);
+  });
+  $('month').textContent=monthNames[selectedDate.getMonth()]+' '+selectedDate.getFullYear();
  }
- function render(){
-  $('timeline-content').style.setProperty('--days',monthDates());
-  renderDates();renderCards();updateGuides();
- }
- function alignToday(){
-  if(key(viewedMonth)!==key(new Date()).slice(0,7)+'-01')return;
-  const button=$('dates').querySelector('[data-date="'+key(new Date())+'"]'),viewport=$('timeline-viewport');
-  if(!button||!viewport)return;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   const br=button.getBoundingClientRect(),vr=viewport.getBoundingClientRect();
-   viewport.scrollLeft+=br.right-vr.right;
-  }));
- }
+ function render(){renderDates();renderCards();}
  function changeMonth(delta){
   const next=new Date(viewedMonth.getFullYear(),viewedMonth.getMonth()+delta,1),last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
   viewedMonth=next;selectedDate=new Date(next.getFullYear(),next.getMonth(),Math.min(monthAnchorDay,last));saveState();render();
-  $('timeline-viewport').scrollLeft=0;
  }
  $('prev').addEventListener('click',()=>changeMonth(-1));$('next').addEventListener('click',()=>changeMonth(1));
  function mark(card,done){
   const map=data.get(card.dataset.name);map.set(key(selectedDate),!!done);saveState();
-  const row=card.querySelector('.progress-row');[...row.children].forEach((el,i)=>{const d=new Date(viewedMonth.getFullYear(),viewedMonth.getMonth(),i+1);el.classList.toggle('done',map.get(key(d))===true);});
   updatePercent(card);card.classList.remove('done-animation','undo-animation','swiped-left','swiped-right');void card.offsetWidth;card.classList.add(done?'done-animation':'undo-animation',done?'swiped-right':'swiped-left');
   setTimeout(()=>card.classList.remove('done-animation','undo-animation','swiped-left','swiped-right'),700);
  }
@@ -248,8 +215,6 @@ body.authenticated .welcome-screen{display:none}
   card.addEventListener('touchcancel',cancel);
  }
  loadState();render();
- window.alignHabitCalendarToToday=alignToday;
- window.addEventListener('pageshow',e=>{if(e.persisted)alignToday();});
 })();
 </script>
 <script type="module">
