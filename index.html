@@ -12,9 +12,8 @@
 html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
 body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,245,252,.18));}
 .page{width:100%;max-width:880px;min-height:100vh;margin:0 auto;padding:70px 17px 100px;position:relative;overflow:hidden;isolation:isolate}
-.guides{position:absolute;z-index:2;top:0;bottom:0;left:46px;right:auto;width:var(--calendar-content-width,100%);display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:9px;pointer-events:none;transform:translateX(calc(-1 * var(--calendar-scroll,0px)));will-change:transform}
-.guides span{position:relative}
-.guides span:before{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed rgba(185,165,194,.23)}
+.guides{position:absolute;z-index:2;inset:0;pointer-events:none;overflow:hidden}.guides span{position:absolute;width:0;border-left:1px dashed rgba(185,165,194,.32)}
+
 .month-head{height:65px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 36px}
 .month-title{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:42px;line-height:1;letter-spacing:-1.6px;text-align:center;margin:0}
 .month-nav{width:62px;height:62px;border:0;border-radius:28px;background:#e9eee8;color:#092b17;display:grid;place-items:center;cursor:pointer;padding:0}
@@ -89,7 +88,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
  .days{margin-top:0;gap:6px;padding:0}
  .day{min-height:48px;height:auto;padding:7px 0;font-size:12px;border-radius:13px}
  .day .num{font-size:18px;margin-top:0}
- .progress-window{margin-left:-18px;margin-right:-18px;padding-left:7px;padding-right:7px}
+ .progress-window{margin-left:-15px;margin-right:-15px;padding-left:7px;padding-right:7px}
  .progress{gap:6px}
  .segment{flex-basis:52px;width:52px}
  .habits{margin-top:65px;gap:18px}
@@ -99,7 +98,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
  .icon-tile svg{width:45px;height:45px}
  .habit-name{font-size:clamp(19px,4.5vw,30px);letter-spacing:-.6px}
  .percent{font-size:clamp(20px,4.5vw,30px)}
- .progress{gap:5px;margin-top:13px}
+ .progress{gap:6px;margin-top:13px}
  .segment{height:17px}
 }
 @media(min-width:651px) and (max-width:780px){
@@ -162,7 +161,7 @@ body.authenticated .welcome-screen{display:none}
 <main class="page">
   <div class="account-bar"><span class="account-status" id="cloud-status">Connecting…</span><button class="account-button" id="account-button">Sign in</button></div>
   <div class="tracker-content" id="tracker-content">
-  <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="guides" aria-hidden="true"></div>
   <header class="month-head">
     <button class="month-nav" id="prev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></svg></button>
     <h1 class="month-title" id="month">November</h1>
@@ -339,8 +338,18 @@ body.authenticated .welcome-screen{display:none}
     const guides=document.querySelector('.guides');
     const updateGuides=()=>{
       if(!guides)return;
-      guides.style.setProperty('--calendar-content-width',daysEl.scrollWidth+'px');
-      guides.style.setProperty('--calendar-scroll',daysWindow.scrollLeft+'px');
+      const page=document.querySelector('.page');
+      const pageRect=page.getBoundingClientRect();
+      const buttons=[...daysEl.querySelectorAll('.day')];
+      guides.innerHTML='';
+      buttons.forEach(button=>{
+        const rect=button.getBoundingClientRect();
+        const line=document.createElement('span');
+        line.style.left=(rect.left+rect.width/2-pageRect.left)+'px';
+        line.style.top=(rect.bottom-pageRect.top)+'px';
+        line.style.bottom='0';
+        guides.appendChild(line);
+      });
     };
     updateGuides();
     if(!daysWindow.dataset.syncBound){
