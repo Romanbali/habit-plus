@@ -302,7 +302,12 @@ body.authenticated .welcome-screen{display:none}
     }
     const selected=daysEl.querySelector('.day.selected');
     if(selected){
-      requestAnimationFrame(()=>{const windowEl=document.getElementById('days-window');windowEl.scrollLeft=selected.offsetLeft+selected.offsetWidth-windowEl.clientWidth;});
+      const windowEl=document.getElementById('days-window');
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        const itemRect=selected.getBoundingClientRect();
+        const windowRect=windowEl.getBoundingClientRect();
+        windowEl.scrollLeft+=itemRect.right-windowRect.right;
+      }));
     }
   }
   function mark(card,done){
