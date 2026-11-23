@@ -301,6 +301,7 @@ body.authenticated .welcome-screen{display:none}
       const btn=document.createElement('button');
       const isSelected=dateKey===key(selectedDate),isToday=dateKey===todayKey,isFuture=dateKey>todayKey;
       btn.type='button';
+      btn.dataset.date=dateKey;
       btn.className='day'+(isSelected?' selected':'')+(isToday?' today':'')+(isFuture?' future':'');
       btn.setAttribute('aria-label',date.toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
       if(isSelected)btn.setAttribute('aria-current','date');
@@ -341,7 +342,7 @@ body.authenticated .welcome-screen{display:none}
   }
   function alignTodayOnInitialLoad(){
     const todayKey=key(new Date());
-    const todayButton=[...daysEl.querySelectorAll('.day')].find(button=>button.getAttribute('aria-label')?.includes(new Date().toLocaleDateString('en',{year:'numeric',month:'long',day:'numeric'})));
+    const todayButton=daysEl.querySelector('.day[data-date="'+todayKey+'"]');
     const windowEl=document.getElementById('days-window');
     if(!todayButton||!windowEl)return;
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
