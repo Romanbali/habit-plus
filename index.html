@@ -311,7 +311,6 @@ body.authenticated .welcome-screen{display:none}
       windowEl.scrollLeft+=itemRect.right-(windowRect.right-rightPadding);
     }));
   }
-  }
   function mark(card,done){
     const map=habitData.get(card.dataset.name);
     map.set(key(selectedDate),!!done);
