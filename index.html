@@ -210,9 +210,6 @@ body.authenticated .welcome-screen{display:none}
       <div class="welcome-mark">H</div>
       <h1>Habit Plus</h1>
       <p>Your habits. Your progress. All in sync.</p>
-      <button class="welcome-primary" id="welcome-login" type="button">Sign in</button>
-      <button class="welcome-secondary" id="welcome-signup" type="button">Create account</button>
-      <div class="welcome-or">or</div>
       <button class="auth-google welcome-google" id="welcome-google" type="button"><span class="google-g">G</span> Continue with Google</button>
       <div class="welcome-foot">Your progress stays private and syncs across your devices.</div>
     </div>
@@ -413,8 +410,6 @@ $('auth-google').addEventListener('click',async()=>{
   authBusy=false;$('auth-google').disabled=false;
  }
 });
-$('welcome-login').addEventListener('click',()=>{setAuthMode('login');showAuth();});
-$('welcome-signup').addEventListener('click',()=>{setAuthMode('signup');showAuth();});
 $('welcome-google').addEventListener('click',()=>$('auth-google').click());
 $('auth-tab-login').addEventListener('click',()=>setAuthMode('login'));
 $('auth-tab-signup').addEventListener('click',()=>setAuthMode('signup'));
