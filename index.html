@@ -316,7 +316,6 @@ body.authenticated .welcome-screen{display:none}
     }
     document.querySelectorAll('.habit').forEach(updateCard);
     syncProgressScroll();
-    alignSelectedDay();
   }
   function syncProgressScroll(){
     const daysWindow=document.getElementById('days-window');
@@ -441,7 +440,6 @@ body.authenticated .welcome-screen{display:none}
   renderCalendar();
   window.addEventListener('load',alignSelectedDay,{once:true});
   window.addEventListener('pageshow',alignSelectedDay);
-  window.addEventListener('resize',alignSelectedDay);
   document.querySelectorAll('.habit').forEach(updateCard);
 })();
 </script>
