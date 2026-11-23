@@ -123,11 +123,31 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .auth-message{font-size:13px;line-height:1.45;color:#62566a;min-height:20px;margin-top:12px;overflow-wrap:anywhere}
 .auth-close{margin-top:8px;background:transparent!important;color:#777!important}
 @media(max-width:650px){.page{padding-top:76px}.account-bar{top:12px;right:14px}.account-status{display:none}}
+
+.tracker-content{display:none}
+body.authenticated .tracker-content{display:block}
+.account-bar{display:none}
+body.authenticated .account-bar{display:flex}
+.welcome-screen{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fff8fc 0%,#f5edf7 100%)}
+body.authenticated .welcome-screen{display:none}
+.welcome-card{width:min(100%,390px);text-align:center;background:rgba(255,255,255,.84);border:1px solid #eee4ef;border-radius:30px;padding:38px 28px 30px;box-shadow:0 18px 50px rgba(85,55,94,.09)}
+.welcome-mark{width:66px;height:66px;border-radius:22px;background:#e9eee8;color:#173d25;display:grid;place-items:center;font:700 38px Georgia,serif;margin:0 auto 22px}
+.welcome-card h1{font:700 38px Georgia,serif;margin:0 0 10px;letter-spacing:-1px}
+.welcome-card p{font-size:15px;line-height:1.5;color:#716b75;margin:0 0 28px}
+.welcome-primary,.welcome-secondary{width:100%;height:50px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer}
+.welcome-primary{border:0;background:#8cae8a;color:white}
+.welcome-secondary{margin-top:10px;background:#fff;border:1px solid #ded7df;color:#29252d}
+.welcome-or{font-size:12px;color:#999;margin:17px 0 0}
+.welcome-google{margin-top:10px}
+.google-g{font-weight:800;font-size:19px;color:#4285f4}
+.welcome-foot{font-size:12px;line-height:1.45;color:#96909a;margin-top:25px}
+@media(max-width:650px){.welcome-card{padding:32px 23px 26px}.welcome-card h1{font-size:34px}}
 </style>
 </head>
 <body class="notranslate">
 <main class="page">
   <div class="account-bar"><span class="account-status" id="cloud-status">Connecting…</span><button class="account-button" id="account-button">Sign in</button></div>
+  <div class="tracker-content" id="tracker-content">
   <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <header class="month-head">
     <button class="month-nav" id="prev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></svg></button>
@@ -183,6 +203,19 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
         <button class="segment done"></button><button class="segment done"></button><button class="segment"></button><button class="segment done"></button><button class="segment done"></button><button class="segment"></button><button class="segment done"></button><button class="segment done"></button><button class="segment"></button><button class="segment"></button>
       </div>
     </article>
+  </section>
+  </div>
+  <section class="welcome-screen" id="welcome-screen">
+    <div class="welcome-card">
+      <div class="welcome-mark">H</div>
+      <h1>Habit Plus</h1>
+      <p>Your habits. Your progress. All in sync.</p>
+      <button class="welcome-primary" id="welcome-login" type="button">Sign in</button>
+      <button class="welcome-secondary" id="welcome-signup" type="button">Create account</button>
+      <div class="welcome-or">or</div>
+      <button class="auth-google welcome-google" id="welcome-google" type="button"><span class="google-g">G</span> Continue with Google</button>
+      <div class="welcome-foot">Your progress stays private and syncs across your devices.</div>
+    </div>
   </section>
 </main>
 <script>
@@ -380,6 +413,9 @@ $('auth-google').addEventListener('click',async()=>{
   authBusy=false;$('auth-google').disabled=false;
  }
 });
+$('welcome-login').addEventListener('click',()=>{setAuthMode('login');showAuth();});
+$('welcome-signup').addEventListener('click',()=>{setAuthMode('signup');showAuth();});
+$('welcome-google').addEventListener('click',()=>$('auth-google').click());
 $('auth-tab-login').addEventListener('click',()=>setAuthMode('login'));
 $('auth-tab-signup').addEventListener('click',()=>setAuthMode('signup'));
 $('auth-forgot').addEventListener('click',()=>setAuthMode('reset'));
@@ -507,6 +543,7 @@ Storage.prototype.setItem=function(key,value){
 };
 async function onSession(session){
  currentUser=session?.user||null;
+ document.body.classList.toggle('authenticated',!!currentUser);
  if(currentUser){
   $('account-button').textContent='Sign out';
   try{await loadCloud();}catch(error){console.error(error);status('Cloud error');}
