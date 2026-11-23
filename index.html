@@ -461,6 +461,8 @@ body.authenticated .welcome-screen{display:none}
     updateCard(card);
   });
   renderCalendar();
+  // Expose alignment for auth bootstrap: before sign-in the tracker is display:none.
+  window.alignHabitCalendarToToday=alignTodayOnInitialLoad;
   window.addEventListener('load',alignTodayOnInitialLoad,{once:true});
   window.addEventListener('pageshow',event=>{if(event.persisted)alignTodayOnInitialLoad();});
   document.querySelectorAll('.habit').forEach(updateCard);
@@ -584,6 +586,8 @@ async function onSession(session){
  if(currentUser){
   $('account-button').textContent='Sign out';
   try{await loadCloud();}catch(error){console.error(error);status('Cloud error');}
+  // Wait until authenticated content is visible before measuring the calendar.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.alignHabitCalendarToToday?.()));
  }else{
   $('account-button').textContent='Sign in';
   status('Not signed in');
