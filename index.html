@@ -315,9 +315,16 @@ body.authenticated .welcome-screen{display:none}
       btn.append(weekdayLabel,number);
       btn.addEventListener('click',()=>{
         selectedDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
-        viewedMonth=new Date(date.getFullYear(),date.getMonth(),1);
         monthAnchorDay=date.getDate();
-        saveState();renderCalendar();
+        saveState();
+        // Update only the selected styling. Keep the existing date nodes in place
+        // so the browser cannot reset or auto-adjust the user's scroll position.
+        daysEl.querySelectorAll('.day').forEach(dayButton=>{
+          const selected=dayButton.dataset.date===dateKey;
+          dayButton.classList.toggle('selected',selected);
+          if(selected)dayButton.setAttribute('aria-current','date');
+          else dayButton.removeAttribute('aria-current');
+        });
       });
       daysEl.appendChild(btn);
     }
