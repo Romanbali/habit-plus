@@ -30,6 +30,9 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .day.selected{background:#8cae8a;color:white}
 .day.selected .weekday{color:rgba(255,255,255,.9)}
 .day.today:not(.selected){box-shadow:inset 0 0 0 1.5px #8cae8a;color:#547b56}
+.day.future{background:rgba(235,235,235,.42);color:#b8b8b8}
+.day.future .weekday{color:#c2c2c2}
+.day.future .num{color:#aaa}
 @media(max-width:650px){.days-window{margin-top:17px;padding:0 7px 5px}.days{gap:6px}.day{flex-basis:52px;width:52px;min-height:58px;border-radius:13px}.day .weekday{font-size:10px}.day .num{font-size:19px}}
 .habits{margin-top:95px;display:flex;flex-direction:column;gap:31px}
 .habit{height:181px;border-radius:40px;border:1.5px solid var(--edge);background:var(--surface);box-shadow:0 8px 18px rgba(85,55,94,.075);padding:23px 29px 28px;position:relative;z-index:1;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .18s ease,box-shadow .18s ease}
@@ -283,9 +286,9 @@ body.authenticated .welcome-screen{display:none}
       const date=new Date(year,month,day);
       const dateKey=key(date);
       const btn=document.createElement('button');
-      const isSelected=dateKey===key(selectedDate),isToday=dateKey===todayKey;
+      const isSelected=dateKey===key(selectedDate),isToday=dateKey===todayKey,isFuture=dateKey>todayKey;
       btn.type='button';
-      btn.className='day'+(isSelected?' selected':'')+(isToday?' today':'');
+      btn.className='day'+(isSelected?' selected':'')+(isToday?' today':'')+(isFuture?' future':'');
       btn.setAttribute('aria-label',date.toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
       if(isSelected)btn.setAttribute('aria-current','date');
       const weekdayLabel=document.createElement('span');weekdayLabel.className='weekday';
