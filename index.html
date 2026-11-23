@@ -228,6 +228,7 @@ body.authenticated .welcome-screen{display:none}
   const STORAGE_KEY = 'habit-plus-state-v1';
   let selectedDate = new Date();
   let viewedMonth = new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+  let monthAnchorDay = selectedDate.getDate();
   function saveState(){
     try{
       const habits={};
@@ -242,6 +243,7 @@ body.authenticated .welcome-screen{display:none}
       const now=new Date();
       selectedDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
       viewedMonth=new Date(now.getFullYear(),now.getMonth(),1);
+      monthAnchorDay=now.getDate();
       return saved?.habits && typeof saved.habits==='object' ? saved.habits : {};
     }catch(error){console.warn('Could not load saved habit data',error);return {};}
   }
@@ -314,6 +316,7 @@ body.authenticated .welcome-screen{display:none}
       btn.addEventListener('click',()=>{
         selectedDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
         viewedMonth=new Date(date.getFullYear(),date.getMonth(),1);
+        monthAnchorDay=date.getDate();
         saveState();renderCalendar();
       });
       daysEl.appendChild(btn);
@@ -374,7 +377,7 @@ body.authenticated .welcome-screen{display:none}
     const year=viewedMonth.getFullYear(),month=viewedMonth.getMonth()+offset;
     const nextMonth=new Date(year,month,1);
     const lastDay=new Date(nextMonth.getFullYear(),nextMonth.getMonth()+1,0).getDate();
-    selectedDate=new Date(nextMonth.getFullYear(),nextMonth.getMonth(),Math.min(selectedDate.getDate(),lastDay));
+    selectedDate=new Date(nextMonth.getFullYear(),nextMonth.getMonth(),Math.min(monthAnchorDay,lastDay));
     viewedMonth=nextMonth;
     saveState();
     renderCalendar();
