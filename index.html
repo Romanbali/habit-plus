@@ -161,7 +161,26 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
   const daysEl = document.getElementById('days');
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const STORAGE_KEY = 'habit-plus-state-v1';
   let selectedDate = new Date(2025, 10, 22);
+  function saveState(){
+    try{
+      const habits={};
+      habitData.forEach((map,name)=>{habits[name]=Object.fromEntries(map);});
+      localStorage.setItem(STORAGE_KEY,JSON.stringify({selectedDate:key(selectedDate),habits}));
+    }catch(error){console.warn('Could not save habit data',error);}
+  }
+  function loadState(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+      if(!saved)return null;
+      if(typeof saved.selectedDate==='string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.selectedDate)){
+        const [y,m,d]=saved.selectedDate.split('-').map(Number);
+        selectedDate=new Date(y,m-1,d);
+      }
+      return saved.habits && typeof saved.habits==='object' ? saved.habits : {};
+    }catch(error){console.warn('Could not load saved habit data',error);return {};}
+  }
   const key = d => [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
   const shift = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
   const visibleDates = () => Array.from({length:10},(_,i)=>shift(selectedDate,i-9));
@@ -172,12 +191,18 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
     'Water': {visible:[1,1,0,1,1,1,1,1,1,1],total:27},
     'Push-ups': {visible:[1,1,0,1,1,0,1,1,0,0],total:23}
   };
-  function initializeHistory(){
+  function initializeHistory(savedHabits={}){
     document.querySelectorAll('.habit').forEach(card=>{
       const name=card.dataset.name, spec=patterns[name], map=new Map();
       const first20=spec.total-spec.visible.reduce((a,b)=>a+b,0);
       for(let i=0;i<20;i++) map.set(key(shift(selectedDate,i-29)),i<first20);
       spec.visible.forEach((v,i)=>map.set(key(shift(selectedDate,i-9)),!!v));
+      const saved=savedHabits[name];
+      if(saved && typeof saved==='object'){
+        Object.entries(saved).forEach(([date,value])=>{
+          if(/^\d{4}-\d{2}-\d{2}$/.test(date)) map.set(date,value===true);
+        });
+      }
       habitData.set(name,map);
     });
   }
@@ -204,6 +229,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
       btn.innerHTML='<span>'+weekday[date.getDay()]+'</span><span class="num">'+date.getDate()+'</span>';
       btn.addEventListener('click',()=>{
         selectedDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+        saveState();
         renderCalendar(); document.querySelectorAll('.habit').forEach(updateCard);
       });
       daysEl.appendChild(btn);
@@ -212,6 +238,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
   function mark(card,done){
     const map=habitData.get(card.dataset.name);
     map.set(key(selectedDate),!!done);
+    saveState();
     updateCard(card);
     card.classList.remove('swiped-left','swiped-right','done-animation','undo-animation');
     void card.offsetWidth;
@@ -220,13 +247,14 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
   }
   document.getElementById('prev').addEventListener('click',()=>{
     selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()-1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth(),0).getDate()));
-    renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
+    saveState();renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
   });
   document.getElementById('next').addEventListener('click',()=>{
     selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()+1,Math.min(selectedDate.getDate(),new Date(selectedDate.getFullYear(),selectedDate.getMonth()+2,0).getDate()));
-    renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
+    saveState();renderCalendar();document.querySelectorAll('.habit').forEach(updateCard);
   });
-  initializeHistory();
+  const savedHabits=loadState();
+  initializeHistory(savedHabits);
   document.querySelectorAll('.habit').forEach(card=>{
     const segments=[...card.querySelectorAll('.segment')];
     let startX=0,startY=0,tracking=false;
