@@ -271,7 +271,9 @@ body.authenticated .welcome-screen{display:none}
       segment.classList.toggle('done',done);
       segment.setAttribute('aria-label',''+key(dates[i])+ (done?' complete':' incomplete'));
     });
-    const start=shift(selectedDate,-29);
+    // The percentage is a fixed rolling 30-day metric anchored to today,
+    // not to the calendar's currently selected date.
+    const start=shift(new Date(),-29);
     let completed=0;
     for(let i=0;i<30;i++) if(map.get(key(shift(start,i)))) completed++;
     card.querySelector('.percent').textContent=Math.round(completed/30*100)+'%';
