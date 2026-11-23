@@ -229,11 +229,10 @@ body.authenticated .welcome-screen{display:none}
   function loadState(){
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-      if(!saved)return null;
-      // Always open the calendar on today's date after a page refresh.
+      // Always select today's local date, even when no local state exists yet.
       const now=new Date();
       selectedDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-      return saved.habits && typeof saved.habits==='object' ? saved.habits : {};
+      return saved?.habits && typeof saved.habits==='object' ? saved.habits : {};
     }catch(error){console.warn('Could not load saved habit data',error);return {};}
   }
   const key = d => [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
@@ -299,15 +298,19 @@ body.authenticated .welcome-screen{display:none}
       });
       daysEl.appendChild(btn);
     }
+    alignSelectedDay();
+  }
+  function alignSelectedDay(){
     const selected=daysEl.querySelector('.day.selected');
-    if(selected){
-      const windowEl=document.getElementById('days-window');
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        const itemRect=selected.getBoundingClientRect();
-        const windowRect=windowEl.getBoundingClientRect();
-        windowEl.scrollLeft+=itemRect.right-windowRect.right;
-      }));
-    }
+    const windowEl=document.getElementById('days-window');
+    if(!selected||!windowEl)return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const itemRect=selected.getBoundingClientRect();
+      const windowRect=windowEl.getBoundingClientRect();
+      const rightPadding=parseFloat(getComputedStyle(windowEl).paddingRight)||0;
+      windowEl.scrollLeft+=itemRect.right-(windowRect.right-rightPadding);
+    }));
+  }
   }
   function mark(card,done){
     const map=habitData.get(card.dataset.name);
@@ -397,6 +400,9 @@ body.authenticated .welcome-screen{display:none}
     updateCard(card);
   });
   renderCalendar();
+  window.addEventListener('load',alignSelectedDay,{once:true});
+  window.addEventListener('pageshow',alignSelectedDay);
+  window.addEventListener('resize',alignSelectedDay);
   document.querySelectorAll('.habit').forEach(updateCard);
 })();
 </script>
