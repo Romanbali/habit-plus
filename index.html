@@ -26,7 +26,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
 .day .num{font-size:33px;font-weight:500;margin-top:8px;line-height:1}
 .day.selected{background:#8cae8a;color:white;padding-top:11px}
 .habits{margin-top:95px;display:flex;flex-direction:column;gap:31px}
-.habit{height:181px;border-radius:40px;border:1.5px solid var(--edge);background:var(--surface);box-shadow:0 8px 18px rgba(85,55,94,.075);padding:23px 29px 28px;position:relative;z-index:1;touch-action:pan-y;transition:transform .18s ease,box-shadow .18s ease}
+.habit{height:181px;border-radius:40px;border:1.5px solid var(--edge);background:var(--surface);box-shadow:0 8px 18px rgba(85,55,94,.075);padding:23px 29px 28px;position:relative;z-index:1;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .18s ease,box-shadow .18s ease}
 .habit{transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease,border-color .28s ease}
 .habit.dragging{transition:none;box-shadow:0 14px 30px rgba(70,90,70,.18);cursor:grabbing}
 .habit.swiped-right{transform:translateX(18px);border-color:#a8d6a5;box-shadow:0 12px 28px rgba(65,150,75,.24)}
@@ -318,35 +318,62 @@ body.authenticated .welcome-screen{display:none}
   initializeHistory(savedHabits);
   document.querySelectorAll('.habit').forEach(card=>{
     const segments=[...card.querySelectorAll('.segment')];
-    let startX=0,startY=0,tracking=false;
+    let startX=0,startY=0,tracking=false,moved=false;
     const isCompletedForSelectedDay=()=>habitData.get(card.dataset.name).get(key(selectedDate))===true;
-    card.addEventListener('pointerdown',e=>{
-      startX=e.clientX;startY=e.clientY;tracking=true;
+    const beginSwipe=(x,y)=>{
+      startX=x;startY=y;tracking=true;moved=false;
       card.classList.add('dragging');
-      try{card.setPointerCapture(e.pointerId)}catch(_){}
-    });
-    card.addEventListener('pointermove',e=>{
+    };
+    const moveSwipe=(x,y,event)=>{
       if(!tracking)return;
-      const dx=e.clientX-startX,dy=e.clientY-startY;
-      if(Math.abs(dx)>Math.abs(dy)*0.8){
+      const dx=x-startX,dy=y-startY;
+      if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.05){
+        moved=true;
+        if(event&&event.cancelable)event.preventDefault();
         const canUndo=isCompletedForSelectedDay();
         const shift=Math.max(canUndo?-72:0,Math.min(72,dx*0.72));
         card.style.transform='translateX('+shift+'px)';
       }
+    };
+    const finishSwipe=(x,y)=>{
+      if(!tracking)return;
+      tracking=false;
+      const dx=x-startX,dy=y-startY,canUndo=isCompletedForSelectedDay();
+      card.classList.remove('dragging');card.style.transform='';
+      if(moved&&Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)*1.05){
+        if(dx>0)mark(card,true);
+        else if(canUndo)mark(card,false);
+      }
+    };
+    const cancelSwipe=()=>{
+      tracking=false;moved=false;card.classList.remove('dragging');card.style.transform='';
+    };
+    card.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='touch')return;
+      beginSwipe(e.clientX,e.clientY);
+    });
+    card.addEventListener('pointermove',e=>{
+      if(e.pointerType==='touch')return;
+      moveSwipe(e.clientX,e.clientY,e);
     });
     card.addEventListener('pointerup',e=>{
-      if(!tracking)return;tracking=false;
-      const dx=e.clientX-startX,dy=e.clientY-startY;
-      const canUndo=isCompletedForSelectedDay();
-      card.classList.remove('dragging');card.style.transform='';
-      if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)*1.05){
-        if(dx>0) mark(card,true);
-        else if(canUndo) mark(card,false);
-      }
+      if(e.pointerType==='touch')return;
+      finishSwipe(e.clientX,e.clientY);
     });
-    card.addEventListener('pointercancel',()=>{
-      tracking=false;card.classList.remove('dragging');card.style.transform='';
-    });
+    card.addEventListener('pointercancel',cancelSwipe);
+    card.addEventListener('touchstart',e=>{
+      if(e.touches.length!==1)return;
+      beginSwipe(e.touches[0].clientX,e.touches[0].clientY);
+    },{passive:true});
+    card.addEventListener('touchmove',e=>{
+      if(!tracking||e.touches.length!==1)return;
+      moveSwipe(e.touches[0].clientX,e.touches[0].clientY,e);
+    },{passive:false});
+    card.addEventListener('touchend',e=>{
+      const t=e.changedTouches[0];
+      if(t)finishSwipe(t.clientX,t.clientY);
+    },{passive:true});
+    card.addEventListener('touchcancel',cancelSwipe);
     updateCard(card);
   });
   renderCalendar();
