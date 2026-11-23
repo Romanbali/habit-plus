@@ -94,10 +94,25 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
  .icon-tile{width:88px}
  .habit-top{grid-template-columns:88px 1fr auto}
 }
+
+.account-bar{position:absolute;top:18px;right:18px;z-index:20;display:flex;align-items:center;gap:9px}
+.account-status{font-size:12px;color:#68636c}
+.account-button{border:1px solid #ded7df;background:#fff;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:700;color:#28242b}
+.auth-backdrop{position:fixed;inset:0;z-index:100;background:rgba(25,20,28,.38);display:none;align-items:center;justify-content:center;padding:20px}
+.auth-backdrop.open{display:flex}
+.auth-panel{width:min(100%,390px);background:#fff;border-radius:24px;padding:28px;box-shadow:0 20px 70px rgba(20,10,30,.2)}
+.auth-panel h2{font-size:24px;margin:0 0 8px}
+.auth-panel p{font-size:14px;line-height:1.5;color:#666;margin:0 0 20px}
+.auth-panel input{width:100%;height:48px;border:1px solid #ddd5df;border-radius:12px;padding:0 14px;font-size:16px;margin-bottom:12px}
+.auth-panel button{width:100%;height:46px;border:0;border-radius:12px;background:#8cae8a;color:white;font-weight:700;font-size:15px}
+.auth-panel button:disabled{opacity:.6}
+.auth-message{font-size:13px;color:#62566a;min-height:20px;margin-top:12px}
+.auth-close{margin-top:8px;background:transparent!important;color:#777!important}
+@media(max-width:650px){.page{padding-top:76px}.account-bar{top:12px;right:14px}.account-status{display:none}}
 </style>
 </head>
 <body class="notranslate">
-<main class="page">
+<main class="page">\n  <div class="account-bar"><span class="account-status" id="cloud-status">Connecting…</span><button class="account-button" id="account-button">Sign in</button></div>
   <div class="guides" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <header class="month-head">
     <button class="month-nav" id="prev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></svg></button>
@@ -162,7 +177,7 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const STORAGE_KEY = 'habit-plus-state-v1';
-  let selectedDate = new Date(2025, 10, 22);
+  let selectedDate = new Date();
   function saveState(){
     try{
       const habits={};
@@ -291,6 +306,123 @@ body{background-color:var(--page);background-image:linear-gradient(180deg,rgba(2
   renderCalendar();
   document.querySelectorAll('.habit').forEach(updateCard);
 })();
+</script>
+
+<div class="auth-backdrop" id="auth-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-panel">
+    <h2 id="auth-title">Sync your habits</h2>
+    <p>Sign in with your email to keep your habit history in the cloud and use it on all your devices.</p>
+    <form id="auth-form"><input id="auth-email" type="email" autocomplete="email" placeholder="Your email address" required><button id="auth-submit" type="submit">Send sign-in link</button></form>
+    <div class="auth-message" id="auth-message"></div>
+    <button class="auth-close" id="auth-close" type="button">Close</button>
+  </div>
+</div>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+const SUPABASE_URL='https://ifhavtkexjpfgjhmyrxp.supabase.co';
+const SUPABASE_KEY='sb_publishable_ZIcZYPUOIh_tX0Y29F_yjA_yq4oja_d';
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
+const STORAGE_KEY='habit-plus-state-v1';
+const defaults=[['Reading','reading',0],['Meditation','meditation',1],['Water','water',2],['Push-ups','push-ups',3]];
+const $=id=>document.getElementById(id);
+let currentUser=null, syncing=false, hydrating=false, habitIds={};
+const status=(s)=>$('cloud-status').textContent=s;
+function showAuth(){ $('auth-backdrop').classList.add('open'); $('auth-email').focus(); }
+function hideAuth(){ $('auth-backdrop').classList.remove('open'); }
+$('account-button').addEventListener('click',async()=>{
+ if(currentUser){if(confirm('Sign out of Habit Plus on this device?')) await supabase.auth.signOut();}
+ else showAuth();
+});
+$('auth-close').addEventListener('click',hideAuth);
+$('auth-backdrop').addEventListener('click',e=>{if(e.target===$('auth-backdrop'))hideAuth();});
+$('auth-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const email=$('auth-email').value.trim();
+ $('auth-submit').disabled=true;$('auth-message').textContent='Sending secure sign-in link…';
+ const {error}=await supabase.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+ $('auth-submit').disabled=false;
+ $('auth-message').textContent=error?error.message:'Check your email and open the sign-in link on this device.';
+});
+async function ensureHabits(){
+ const {data,error}=await supabase.from('habits').select('id,habit_key,name,sort_order').order('sort_order');
+ if(error)throw error;
+ if(!data.length){
+  const rows=defaults.map(([name,slug,sort_order])=>({name,habit_key:slug,sort_order}));
+  const {error:insertError}=await supabase.from('habits').insert(rows);
+  if(insertError)throw insertError;
+  return ensureHabits();
+ }
+ data.forEach(h=>habitIds[h.name]=h.id);
+}
+function dateKey(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function fromLocalDate(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+async function loadCloud(){
+ status('Loading cloud data…');
+ await ensureHabits();
+ const [{data:rows,error:readError},{data:settings,error:settingsError}]=await Promise.all([
+  supabase.from('habit_completions').select('habit_id,completed_on,is_completed'),
+  supabase.from('user_settings').select('selected_date').maybeSingle()
+ ]);
+ if(readError)throw readError;if(settingsError)throw settingsError;
+ const today=dateKey(new Date());
+ const selected=settings?.selected_date||today;
+ const local={};
+ defaults.forEach(([name])=>{
+  local[name]={};
+  const start=fromLocalDate(selected);
+  for(let i=29;i>=0;i--){const d=new Date(start);d.setDate(d.getDate()-i);local[name][dateKey(d)]=false;}
+ });
+ const idToName=Object.fromEntries(Object.entries(habitIds).map(([n,id])=>[id,n]));
+ rows.forEach(row=>{const name=idToName[row.habit_id];if(name)local[name][row.completed_on]=row.is_completed;});
+ hydrating=true;
+ localStorage.setItem(STORAGE_KEY,JSON.stringify({selectedDate:selected,habits:local}));
+ hydrating=false;
+ status('Synced');
+ location.reload();
+}
+async function syncLocalState(raw){
+ if(!currentUser||syncing||hydrating)return;
+ let state;try{state=JSON.parse(raw);}catch{return;}
+ syncing=true;status('Saving…');
+ try{
+  const rows=[];
+  for(const [name,dates] of Object.entries(state.habits||{})){
+   const habit_id=habitIds[name];if(!habit_id)continue;
+   for(const [completed_on,value] of Object.entries(dates||{})){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(completed_on))
+     rows.push({user_id:currentUser.id,habit_id,completed_on,is_completed:value===true,updated_at:new Date().toISOString()});
+   }
+  }
+  if(rows.length){
+   const {error}=await supabase.from('habit_completions').upsert(rows,{onConflict:'user_id,habit_id,completed_on'});
+   if(error)throw error;
+  }
+  const {error:settingsError}=await supabase.from('user_settings').upsert({user_id:currentUser.id,selected_date:state.selectedDate||dateKey(new Date()),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(settingsError)throw settingsError;
+  status('Synced');
+ }catch(error){console.error('Cloud sync failed',error);status('Sync error — check connection');}
+ finally{syncing=false;}
+}
+const originalSetItem=Storage.prototype.setItem;
+Storage.prototype.setItem=function(key,value){
+ originalSetItem.call(this,key,value);
+ if(key===STORAGE_KEY)syncLocalState(value);
+};
+async function onSession(session){
+ currentUser=session?.user||null;
+ if(currentUser){
+  $('account-button').textContent='Sign out';
+  try{await loadCloud();}catch(error){console.error(error);status('Cloud error');}
+ }else{
+  $('account-button').textContent='Sign in';
+  status('Not signed in');
+ }
+}
+supabase.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>onSession(session),0);});
+supabase.auth.getSession().then(({data,error})=>{
+ if(error){status('Connection error');return;}
+ onSession(data.session);
+});
 </script>
 </body>
 </html>
