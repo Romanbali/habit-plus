@@ -357,15 +357,8 @@ body.authenticated .welcome-screen{display:none}
   <div class="auth-panel">
     <h2 id="auth-title">Welcome to Habit Plus</h2>
     <p id="auth-description">Sign in to sync your habits securely across all your devices.</p>
-    <div class="auth-tabs" id="auth-tabs"><button type="button" class="active" id="auth-tab-login">Sign in</button><button type="button" id="auth-tab-signup">Create account</button></div>
-    <button class="auth-google" id="auth-google" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z" transform="translate(0 4) scale(1)"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.75 7.18l7.73 6C44.42 37.99 46.98 31.92 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z" transform="translate(0 4)"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.14 1.43-4.89 2.28-8.18 2.28-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z" transform="translate(0 -4)"/></svg><span>Continue with Google</span></button>
-    <div class="auth-divider">or continue with email</div>
-    <form id="auth-form">
-      <input id="auth-email" type="email" autocomplete="email" placeholder="Email address" required>
-      <div class="auth-password-wrap"><input id="auth-password" type="password" autocomplete="current-password" placeholder="Password (at least 8 characters)" minlength="8" required><button class="auth-show-password" id="auth-show-password" type="button">Show</button></div>
-      <div class="auth-links"><button class="auth-link" id="auth-forgot" type="button">Forgot password?</button></div>
-      <button id="auth-submit" type="submit">Sign in</button>
-    </form>
+    <p>Sign in securely with your Google account to access your habits on all devices.</p>
+    <button class="auth-google" id="auth-google" type="button"><span class="google-g">G</span> Continue with Google</button>
     <div class="auth-message" id="auth-message" role="status" aria-live="polite"></div>
     <button class="auth-close" id="auth-close" type="button">Close</button>
   </div>
@@ -380,78 +373,27 @@ const defaults=[['Reading','reading',0],['Meditation','meditation',1],['Water','
 const $=id=>document.getElementById(id);
 let currentUser=null, syncing=false, hydrating=false, habitIds={};
 const status=(s)=>$('cloud-status').textContent=s;
-let authMode='login',authBusy=false;
-function showAuth(){ $('auth-backdrop').classList.add('open'); $('auth-email').focus(); }
+let authBusy=false;
 function hideAuth(){ $('auth-backdrop').classList.remove('open'); }
-function setAuthMode(mode){
- authMode=mode;
- const reset=mode==='reset',update=mode==='update',signup=mode==='signup';
- $('auth-tab-login').classList.toggle('active',mode==='login');
- $('auth-tab-signup').classList.toggle('active',signup);
- $('auth-tabs').style.display=(reset||update)?'none':'grid';
- $('auth-title').textContent=update?'Choose a new password':reset?'Reset your password':signup?'Create your account':'Welcome back';
- $('auth-description').textContent=update?'Set a new password for your Habit Plus account.':reset?'We will email you a secure password reset link.':signup?'Create an account to keep your habit history synced across devices.':'Sign in to sync your habits securely across all your devices.';
- $('auth-password').style.display=reset?'none':'block';
- $('auth-show-password').style.display=reset?'none':'block';
- $('auth-forgot').style.display=mode==='login'?'inline-block':'none';
- $('auth-submit').textContent=update?'Save new password':reset?'Send reset link':signup?'Create account':'Sign in';
- $('auth-password').required=!reset;$('auth-password').placeholder=update?'New password (at least 8 characters)':'Password (at least 8 characters)';
- $('auth-password').autocomplete=signup?'new-password':'current-password';
- $('auth-message').textContent='';
-}
-$('auth-google').addEventListener('click',async()=>{
+async function startGoogleSignIn(){
  if(authBusy)return;
  authBusy=true;$('auth-google').disabled=true;$('auth-message').textContent='Connecting to Google…';
  try{
   const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://romanbali.github.io/habit-plus/'}});
   if(error)throw error;
  }catch(error){
-  $('auth-message').textContent=error.message||'Google sign-in is not configured yet.';
+  $('auth-message').textContent=error.message||'Google sign-in is unavailable. Please try again.';
   authBusy=false;$('auth-google').disabled=false;
  }
-});
-$('welcome-google').addEventListener('click',()=>$('auth-google').click());
-$('auth-tab-login').addEventListener('click',()=>setAuthMode('login'));
-$('auth-tab-signup').addEventListener('click',()=>setAuthMode('signup'));
-$('auth-forgot').addEventListener('click',()=>setAuthMode('reset'));
-$('auth-show-password').addEventListener('click',()=>{
- const field=$('auth-password'),show=field.type==='password';
- field.type=show?'text':'password';$('auth-show-password').textContent=show?'Hide':'Show';
-});
+}
+$('auth-google').addEventListener('click',startGoogleSignIn);
+$('welcome-google').addEventListener('click',startGoogleSignIn);
 $('account-button').addEventListener('click',async()=>{
  if(currentUser){if(confirm('Sign out of Habit Plus on this device?')) await supabase.auth.signOut();}
- else {setAuthMode('login');showAuth();}
+ else startGoogleSignIn();
 });
 $('auth-close').addEventListener('click',hideAuth);
 $('auth-backdrop').addEventListener('click',e=>{if(e.target===$('auth-backdrop'))hideAuth();});
-$('auth-form').addEventListener('submit',async e=>{
- e.preventDefault();if(authBusy)return;
- const email=$('auth-email').value.trim(),password=$('auth-password').value;
- authBusy=true;$('auth-submit').disabled=true;$('auth-message').textContent='Please wait…';
- try{
-  let result;
-  if(authMode==='update'){
-   const {error}=await supabase.auth.updateUser({password});
-   $('auth-message').textContent=error?error.message:'Password updated successfully.';
-   if(!error)setTimeout(hideAuth,900);
-   result={error};
-  }else if(authMode==='signup'){
-   result=await supabase.auth.signUp({email,password,options:{emailRedirectTo:'https://romanbali.github.io/habit-plus/'}});
-   if(!result.error&&!result.data.session)$('auth-message').textContent='Account created. Check your email and confirm your address, then return here to sign in.';
-   else if(!result.error){$('auth-message').textContent='Your account is ready. Signing you in…';}
-  }else if(authMode==='reset'){
-   result=await supabase.auth.resetPasswordForEmail(email,{redirectTo:'https://romanbali.github.io/habit-plus/'});
-   $('auth-message').textContent=result.error?result.error.message:'If an account exists for this email, a password reset link has been sent.';
-  }else{
-   result=await supabase.auth.signInWithPassword({email,password});
-   $('auth-message').textContent=result.error?'Could not sign in: '+result.error.message:'Signed in successfully.';
-   if(!result.error)hideAuth();
-  }
-  if(result?.error)$('auth-message').textContent=result.error.message;
- }catch(error){$('auth-message').textContent=error.message||'Something went wrong. Please try again.';}
- finally{authBusy=false;$('auth-submit').disabled=false;}
-});
-setAuthMode('login');
 async function ensureHabits(){
  const {data,error}=await supabase.from('habits').select('id,habit_key,name,sort_order').order('sort_order');
  if(error)throw error;
@@ -547,7 +489,7 @@ async function onSession(session){
   status('Not signed in');
  }
 }
-supabase.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){setAuthMode('update');showAuth();}setTimeout(()=>onSession(session),0);});
+supabase.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>onSession(session),0);});
 supabase.auth.getSession().then(({data,error})=>{
  if(error){status('Connection error');return;}
  onSession(data.session);
