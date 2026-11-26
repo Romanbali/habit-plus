@@ -100,7 +100,7 @@
  .strip-area{margin-top:28px;padding:10px 12px;gap:9px}.habit-tile{width:125px;min-width:125px;height:96px}.add-tile{min-width:190px;font-size:17px}.strip-arrow{display:none}
 }
 @media(max-width:640px){
- .shell{padding:13px 15px calc(env(safe-area-inset-bottom) + 28px)}.header{height:auto;min-height:48px;grid-template-columns:auto 1fr auto;gap:8px}.avatar{display:none}.menu-toggle,.search-toggle{width:40px;height:40px}.menu-toggle svg,.search-toggle svg{width:26px;height:26px}.nav{gap:13px;justify-content:center}.nav button{font-size:13px;padding:0 0 7px}.header-rule{margin:10px 0 20px}
+ .shell{padding:13px 15px calc(env(safe-area-inset-bottom) + 28px)}.header{height:auto;min-height:48px;grid-template-columns:auto 1fr auto;gap:8px}.avatar{display:none}.menu-toggle,.search-toggle{width:40px;height:40px}.menu-toggle svg,.search-toggle svg{width:26px;height:26px}.nav{gap:8px;justify-content:center;min-width:0}.nav button{font-size:11px;padding:0 0 7px}.menu-toggle,.search-toggle{width:32px;height:36px}.menu-toggle svg,.search-toggle svg{width:23px;height:23px}.header-rule{margin:10px 0 20px}
  .hero-grid{grid-template-columns:1fr;gap:20px;min-height:0}.hero-left{padding:0}.art-wrap{height:205px;width:100%;max-width:300px}.art-symbol{width:140px;height:140px;font-size:76px}.habit-name-large{font-size:30px;margin-top:2px}.habit-description-large{font-size:17px;margin-top:5px;min-height:0}
  .hero-right{width:100%}.progress-summary{height:74px;border-radius:20px;margin-bottom:15px;padding:9px 15px}.ring{width:56px;height:56px;flex-basis:56px}.summary-percent{font-size:30px}.summary-label{font-size:11px}
  .heatmap{min-width:0;grid-template-columns:30px repeat(8,minmax(0,1fr));gap:7px 5px}.heatmap-label{font-size:13px}.heatmap-head{font-size:10px}.heat-cell{height:clamp(24px,7vw,31px);border-radius:7px}
@@ -188,7 +188,7 @@ const DEFAULTS=[
  {id:'local-default-3',name:'Высыпаться',description:'Ложиться спать вовремя',icon:'🛏️'},
  {id:'local-default-4',name:'Учиться',description:'Узнавать что-то новое каждый день',icon:'💻'}
 ];
-let habits=[],marks=new Map(),activeId=null,selectedDate=startOf(new Date()),editMode=false,pendingDeleteId=null,dayDraft=null,toastTimer=null;
+let habits=[],marks=new Map(),activeId=null,selectedDate=startOf(new Date()),editMode=false,pendingDeleteId=null,dayDraft=null,toastTimer=null,suppressClickUntil=0;
 function startOf(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function addDays(d,n){const x=startOf(d);x.setDate(x.getDate()+n);return x;}
 function key(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
@@ -204,8 +204,7 @@ function load(){
  habits=Array.isArray(saved.habits)?saved.habits:DEFAULTS.map(x=>Object.assign({},x));
  marks=new Map((Array.isArray(saved.completions)?saved.completions:[]).map(entry=>{const k=entry[0],v=entry[1];return [k,v===true?'done':v===false?'missed':(v==='done'||v==='missed'?v:null)];}).filter(entry=>entry[1]!==null));
  habits=habits.filter(h=>h&&typeof h.id==='string'&&typeof h.name==='string').map(h=>({id:h.id,name:h.name,description:h.description||'',icon:h.icon||'✨'}));
- if(!habits.length)habits=DEFAULTS.map(x=>Object.assign({},x));
- activeId=(habits.find(h=>h.id==='local-default-1')||habits[0]).id;save();
+ activeId=habits.length?(habits.find(h=>h.id==='local-default-1')||habits[0]).id:null;save();
 }
 function activeHabit(){return habits.find(h=>h.id===activeId)||habits[0]||null;}
 function progressFor(id){
@@ -219,8 +218,7 @@ function mondayOf(d){const x=startOf(d);const day=(x.getDay()+6)%7;x.setDate(x.g
 function renderHeatmap(h){
  const map=$('heatmap');map.innerHTML='';
  map.appendChild(document.createElement('div'));
- const start=mondayOf(addDays(mondayOf(selectedDate),-49));
- const days=[];
+ const start=mondayOf(addDays(mondayOf(startOf(new Date())),-49));
  for(let col=0;col<8;col++){
   const head=document.createElement('div');head.className='heatmap-head';head.textContent=col===7?'Эта нед.':(col+1)+' нед.';map.appendChild(head);
  }
@@ -251,6 +249,7 @@ function renderHero(){
 }
 function renderTiles(){
  const strip=$('habit-strip');strip.innerHTML='';
+ if(!habits.length)strip.innerHTML='<div class="empty" style="min-width:230px;padding:18px">Пока нет привычек. Нажмите «Добавить привычку».</div>';
  habits.forEach(h=>{
   const b=document.createElement('button');b.type='button';b.className='habit-tile'+(h.id===activeId?' active':'')+(editMode?' edit-mode':'');b.dataset.habit=h.id;
   b.innerHTML='<span class="tile-icon">'+escapeHtml(h.icon)+'</span><span class="tile-title">'+escapeHtml(h.name)+'</span>'+(editMode?'<span class="tile-x" data-delete="'+escapeHtml(h.id)+'" aria-label="Удалить">×</span>':'');
@@ -266,13 +265,11 @@ function renderTiles(){
 }
 function bindLongPress(element,callback){
  let timer=null,triggered=false;
- element.addEventListener('pointerdown',()=>{
-  triggered=false;clearTimeout(timer);timer=setTimeout(()=>{triggered=true;callback();},560);
- });
+ const fire=()=>{if(triggered)return;triggered=true;suppressClickUntil=Date.now()+900;callback();};
+ element.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;triggered=false;clearTimeout(timer);timer=setTimeout(fire,560);});
  const cancel=()=>clearTimeout(timer);
  ['pointerup','pointercancel','pointerleave'].forEach(name=>element.addEventListener(name,cancel));
- element.addEventListener('contextmenu',e=>{e.preventDefault();if(!triggered){triggered=true;callback();}});
- element.addEventListener('click',e=>{if(triggered){e.preventDefault();e.stopImmediatePropagation();triggered=false;}},true);
+ element.addEventListener('contextmenu',e=>{e.preventDefault();fire();});
 }
 function bindLongPressCells(){
  $('heatmap').querySelectorAll('.heat-cell').forEach(cell=>{
@@ -281,8 +278,12 @@ function bindLongPressCells(){
  });
 }
 function render(){
- if(!habits.length){$('hero-name').textContent='Добавьте первую привычку';$('habit-strip').innerHTML='';return;}
- if(!habits.some(h=>h.id===activeId))activeId=habits[0].id;
+ if(!habits.some(h=>h.id===activeId))activeId=habits.length?habits[0].id:null;
+ if(!habits.length){
+  $('hero-name').textContent='Добавьте первую привычку';$('hero-description').textContent='Создайте привычку, чтобы начать отслеживание';
+  $('hero-percent').textContent='0%';ringValue(0);$('heatmap').innerHTML='';$('hero-illustration').style.display='none';$('art-symbol').style.display='grid';$('art-symbol').textContent='＋';
+  renderTiles();renderStats();return;
+ }
  renderHero();renderTiles();renderStats();
 }
 function openHabitForm(id){
@@ -326,6 +327,7 @@ function switchPage(page){
  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));
  $('menu-pop').classList.remove('open');
 }
+document.addEventListener('click',e=>{if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();suppressClickUntil=0;}},true);
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
 $('menu-toggle').addEventListener('click',()=>$('menu-pop').classList.toggle('open'));
 $('avatar-menu').addEventListener('click',()=>$('menu-pop').classList.toggle('open'));
@@ -356,12 +358,26 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelec
 function downloadBackup(){
  const payload={app:'Habit Plus',version:3,exportedAt:new Date().toISOString(),habits:habits,completions:Array.from(marks.entries())};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='habit-plus-backup-'+key(new Date())+'.json';a.click();URL.revokeObjectURL(url);notify('Резервная копия скачана');
+ a.href=url;a.download='habit-plus-backup-'+key(new Date())+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);notify('Резервная копия скачана');
 }
 $('export-data').addEventListener('click',downloadBackup);
 $('import-file').addEventListener('change',async e=>{
  const file=e.target.files&&e.target.files[0];if(!file)return;
- try{const data=JSON.parse(await file.text());if(!Array.isArray(data.habits)||!Array.isArray(data.completions))throw new Error('Неверный формат резервной копии');habits=data.habits;marks=new Map(data.completions);activeId=habits[0]?habits[0].id:null;save();render();notify('Резервная копия восстановлена');}catch(err){notify('Не удалось прочитать файл резервной копии');}finally{e.target.value='';}
+ try{
+  const data=JSON.parse(await file.text());
+  if(!data||!Array.isArray(data.habits)||!Array.isArray(data.completions))throw new Error('Неверный формат');
+  const importedHabits=data.habits.filter(h=>h&&typeof h.id==='string'&&typeof h.name==='string'&&h.name.trim()).map(h=>({id:h.id,name:h.name.trim().slice(0,40),description:String(h.description||'').slice(0,120),icon:String(h.icon||'✨').slice(0,8)}));
+  const ids=new Set(importedHabits.map(h=>h.id)),importedMarks=[];
+  data.completions.forEach(entry=>{
+   if(!Array.isArray(entry)||entry.length<2||typeof entry[0]!=='string')return;
+   const split=entry[0].lastIndexOf('|');if(split<1)return;
+   const id=entry[0].slice(0,split),date=entry[0].slice(split+1),value=entry[1];
+   if(!ids.has(id)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return;
+   const normalized=value===true||value==='done'?'done':value===false||value==='missed'?'missed':null;
+   if(normalized)importedMarks.push([id+'|'+date,normalized]);
+  });
+  habits=importedHabits;marks=new Map(importedMarks);activeId=habits.length?habits[0].id:null;editMode=false;save();render();notify('Резервная копия восстановлена');
+ }catch(err){notify('Файл резервной копии повреждён или имеет неверный формат');}finally{e.target.value='';}
 });
 $('reset-data').addEventListener('click',()=>$('delete-data-modal').classList.add('open'));
 $('reset-confirm').addEventListener('click',()=>{habits=[];marks.clear();activeId=null;save();closeModal('delete-data-modal');render();notify('Данные сброшены');});
