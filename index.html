@@ -265,7 +265,7 @@ function renderTiles(){
 }
 function bindLongPress(element,callback){
  let timer=null,triggered=false;
- const fire=()=>{if(triggered)return;triggered=true;suppressClickUntil=Date.now()+900;callback();};
+ const fire=()=>{if(triggered)return;triggered=true;suppressClickUntil=Date.now()+450;callback();};
  element.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;triggered=false;clearTimeout(timer);timer=setTimeout(fire,560);});
  const cancel=()=>clearTimeout(timer);
  ['pointerup','pointercancel','pointerleave'].forEach(name=>element.addEventListener(name,cancel));
@@ -367,16 +367,16 @@ $('import-file').addEventListener('change',async e=>{
   const data=JSON.parse(await file.text());
   if(!data||!Array.isArray(data.habits)||!Array.isArray(data.completions))throw new Error('Неверный формат');
   const importedHabits=data.habits.filter(h=>h&&typeof h.id==='string'&&typeof h.name==='string'&&h.name.trim()).map(h=>({id:h.id,name:h.name.trim().slice(0,40),description:String(h.description||'').slice(0,120),icon:String(h.icon||'✨').slice(0,8)}));
-  const ids=new Set(importedHabits.map(h=>h.id)),importedMarks=[];
+  const uniqueHabits=importedHabits.filter((h,i,a)=>a.findIndex(x=>x.id===h.id)===i);const ids=new Set(uniqueHabits.map(h=>h.id)),importedMarks=[];
   data.completions.forEach(entry=>{
    if(!Array.isArray(entry)||entry.length<2||typeof entry[0]!=='string')return;
    const split=entry[0].lastIndexOf('|');if(split<1)return;
    const id=entry[0].slice(0,split),date=entry[0].slice(split+1),value=entry[1];
-   if(!ids.has(id)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return;
+   if(!ids.has(id)||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
    const normalized=value===true||value==='done'?'done':value===false||value==='missed'?'missed':null;
    if(normalized)importedMarks.push([id+'|'+date,normalized]);
   });
-  habits=importedHabits;marks=new Map(importedMarks);activeId=habits.length?habits[0].id:null;editMode=false;save();render();notify('Резервная копия восстановлена');
+  habits=uniqueHabits;marks=new Map(importedMarks);activeId=habits.length?habits[0].id:null;editMode=false;save();render();notify('Резервная копия восстановлена');
  }catch(err){notify('Файл резервной копии повреждён или имеет неверный формат');}finally{e.target.value='';}
 });
 $('reset-data').addEventListener('click',()=>$('delete-data-modal').classList.add('open'));
