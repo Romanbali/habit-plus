@@ -380,7 +380,7 @@ $('import-file').addEventListener('change',async e=>{
  }catch(err){notify('Файл резервной копии повреждён или имеет неверный формат');}finally{e.target.value='';}
 });
 $('reset-data').addEventListener('click',()=>$('delete-data-modal').classList.add('open'));
-$('reset-confirm').addEventListener('click',()=>{habits=[];marks.clear();activeId=null;save();closeModal('delete-data-modal');render();notify('Данные сброшены');});
+$('reset-confirm').addEventListener('click',()=>{habits=[];marks.clear();activeId=null;editMode=false;save();closeModal('delete-data-modal');render();notify('Данные сброшены');});
 $('manage-habits').addEventListener('click',()=>{editMode=true;switchPage('tracker');renderTiles();$('edit-toolbar').classList.add('show');notify('Удерживайте карточку, чтобы изменить её');});
 load();render();
 bindLongPress($('.hero-left'),()=>{const h=activeHabit();if(h)openHabitForm(h.id);});
