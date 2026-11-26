@@ -147,14 +147,14 @@ function openHabit(id){const h=id?habits.find(x=>x.id===id):null;$('habit-modal-
 $('habit-form').addEventListener('submit',async e=>{
  e.preventDefault();const id=$('habit-id').value,name=$('habit-name').value.trim(),description=$('habit-desc').value.trim(),icon=$('habit-icon').value.trim()||'✨';if(!name)return;
  try{
-  if(id){const {error}=await supabase.from('habits').update({name}).eq('id',id).eq('user_id',user.id);if(error)throw error;const h=habits.find(x=>x.id===id);h.name=name;h.description=description;h.icon=icon;}
-  else{const {data,error}=await supabase.from('habits').insert({user_id:user.id,name,habit_key:'custom-'+Date.now(),sort_order:habits.length}).select().single();if(error)throw error;habits.push({...data,description,icon});active=habits.length-1;}
+  if(id){const h=habits.find(x=>x.id===id);const habit_key=h.habit_key.startsWith('custom:')?'custom:'+encodeURIComponent(icon)+':'+encodeURIComponent(description):h.habit_key;const {error}=await supabase.from('habits').update({name,habit_key}).eq('id',id).eq('user_id',user.id);if(error)throw error;h.name=name;h.description=description;h.icon=icon;h.habit_key=habit_key;}
+  else{const {data,error}=await supabase.from('habits').insert({user_id:user.id,name,habit_key:'custom:'+encodeURIComponent(icon)+':'+encodeURIComponent(description),sort_order:habits.length}).select().single();if(error)throw error;habits.push({...data,description,icon});active=habits.length-1;}
   closeModal('habit-modal');render();
  }catch(err){console.error(err);alert('Не удалось сохранить привычку: '+err.message);}
 });
 $('delete-habit').addEventListener('click',async()=>{
  const id=$('habit-id').value;if(!id||!confirm('Удалить привычку и её отметки?'))return;
- try{const {error}=await supabase.from('habits').delete().eq('id',id).eq('user_id',user.id);if(error)throw error;habits=habits.filter(h=>h.id!==id);for(const k of [...completions.keys()])if(k.startsWith(id+'|'))completions.delete(k);active=0;closeModal('habit-modal');render();}catch(e){alert('Не удалось удалить: '+e.message);}
+ try{const {error:marksError}=await supabase.from('habit_completions').delete().eq('habit_id',id).eq('user_id',user.id);if(marksError)throw marksError;const {error}=await supabase.from('habits').delete().eq('id',id).eq('user_id',user.id);if(error)throw error;habits=habits.filter(h=>h.id!==id);for(const k of [...completions.keys()])if(k.startsWith(id+'|'))completions.delete(k);active=0;closeModal('habit-modal');render();}catch(e){alert('Не удалось удалить: '+e.message);}
 });
 function renderCalendar(){
  const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth(),first=new Date(y,m,1),start=(first.getDay()+6)%7,last=new Date(y,m+1,0).getDate();
@@ -178,7 +178,7 @@ $('overall-open').addEventListener('click',()=>document.querySelector('[data-vie
 async function loadData(){
  const {data:rows,error}=await supabase.from('habits').select('*').order('sort_order');if(error)throw error;
  if(!rows.length){const {data:created,error:ce}=await supabase.from('habits').insert(defaults.map((h,i)=>({user_id:user.id,name:h.name,habit_key:h.key,sort_order:i}))).select();if(ce)throw ce;habits=created.map((h,i)=>({...h,description:defaults[i].description,icon:defaults[i].icon}));}
- else habits=rows.map(h=>({...h,description:defaults.find(x=>x.key===h.habit_key)?.description||'Отмечайте выполнение каждый день',icon:defaults.find(x=>x.key===h.habit_key)?.icon||symbols[h.habit_key]||'✨'}));
+ else habits=rows.map(h=>{const base=defaults.find(x=>x.key===h.habit_key);const parts=h.habit_key.startsWith('custom:')?h.habit_key.split(':'):[];let icon='✨',description='Отмечайте выполнение каждый день';if(base){icon=base.icon;description=base.description;}else if(parts.length>=3){try{icon=decodeURIComponent(parts[1]);description=decodeURIComponent(parts.slice(2).join(':'));}catch{}}const translated=({'push-ups':'Заниматься спортом','water':'Пить воду','reading':'Чтение','sleep':'Ранний сон'})[h.habit_key]||h.name;return {...h,name:translated,description,icon};});
  const ids=habits.map(h=>h.id);
  if(ids.length){const {data:marks,error:me}=await supabase.from('habit_completions').select('habit_id,completed_on,is_completed').in('habit_id',ids);if(me)throw me;completions.clear();marks.forEach(x=>completions.set(x.habit_id+'|'+x.completed_on,x.is_completed));}
  const {data:profile}=await supabase.auth.getUser();$('profile-email').textContent=profile.user?.email||'';$('profile-name').textContent=profile.user?.user_metadata?.full_name||'Мой профиль';
