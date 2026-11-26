@@ -39,6 +39,10 @@
 .pick-item.active{border:3px solid #00d45b;box-shadow:inset 0 0 0 2px #00d45b;background:#17251d}
 .pick-icon{font-size:30px;line-height:1.2}.pick-name{font-size:13px;font-weight:750;text-align:center;max-width:90px;line-height:1.15}.pick-check{position:absolute;right:-2px;top:-5px;width:24px;height:24px;border-radius:50%;background:#f4f4f5;color:#151515;font-size:17px;font-weight:900;display:grid;place-items:center}
 .pick-add{background:#073f28;border:0}.pick-add .pick-icon{font-size:38px;font-weight:300}.pick-add .pick-name{font-size:12px}
+.pick-delete{position:absolute;right:-7px;top:-7px;width:29px;height:29px;border:2px solid #111;border-radius:50%;background:#ff3b30;color:#fff;font-size:23px;font-weight:900;line-height:1;display:grid;place-items:center;z-index:5;box-shadow:0 2px 8px #0008}
+.pick-item.editing{outline:2px dashed #ff6259;outline-offset:3px}
+.confirm-copy{color:#c8c4cb;line-height:1.45;margin:0 0 18px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.danger{border:0;background:#ff453a;color:white;font-weight:850;border-radius:14px;padding:14px}
+
 .overall-card{margin-top:25px;width:100%;min-height:140px;border-radius:28px;background:linear-gradient(110deg,#242226,#1b191d);border:1px solid #302d32;display:flex;align-items:center;padding:20px 23px;gap:22px}
 .donut{width:116px;height:116px;min-width:116px;position:relative;display:grid;place-items:center}
 .donut svg{width:116px;height:116px;transform:rotate(-90deg)}
@@ -85,6 +89,7 @@
  <button class="nav-btn" data-view="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0Z"/></svg>Профиль</button>
 </nav>
 <div class="modal" id="habit-modal"><div class="sheet"><div class="sheet-head"><h2 id="habit-modal-title">Новая привычка</h2><button class="close" data-close="habit-modal">×</button></div><form id="habit-form"><input type="hidden" id="habit-id"><label class="label">Название</label><input class="input" id="habit-name" maxlength="36" required placeholder="Например, Прогулка"><label class="label">Описание</label><input class="input" id="habit-desc" maxlength="80" placeholder="Небольшая цель на каждый день"><label class="label">Иконка (эмодзи)</label><input class="input" id="habit-icon" maxlength="4" value="✨"><button class="primary" type="submit">Сохранить привычку</button></form><button class="secondary" id="delete-habit" style="width:100%;margin-top:12px;display:none">Удалить привычку</button></div></div>
+<div class="modal" id="delete-confirm-modal"><div class="sheet"><div class="sheet-head"><h2>Удалить привычку?</h2><button class="close" data-close="delete-confirm-modal">×</button></div><p class="confirm-copy" id="delete-confirm-name">Привычка и её отметки будут удалены с этого устройства.</p><div class="confirm-actions"><button class="secondary" id="delete-cancel">Отменить</button><button class="danger" id="delete-confirm">Удалить</button></div></div></div>
 <div class="modal" id="calendar-modal"><div class="sheet"><div class="sheet-head"><h2>Календарь</h2><button class="close" data-close="calendar-modal">×</button></div><div class="calendar-head"><button class="secondary" id="cal-prev">‹</button><b id="cal-month"></b><button class="secondary" id="cal-next">›</button></div><div class="calendar-grid" id="calendar-grid"></div><button class="primary" id="calendar-today">Сегодня</button></div></div>
 <div class="modal" id="settings-modal"><div class="sheet"><div class="sheet-head"><h2>Настройки</h2><button class="close" data-close="settings-modal">×</button></div><div class="setting-row"><span>Тёмная тема</span><b>Включена</b></div><div class="setting-row"><span>Расчёт прогресса</span><b>50 дней</b></div><button class="secondary" id="settings-edit" style="width:100%;margin-top:16px">Управление привычками</button><button class="secondary" id="settings-signout" style="width:100%;margin-top:10px">Выйти из аккаунта</button></div></div>
 
@@ -96,6 +101,7 @@ const symbols={'Reading':'📖','Meditation':'🌙','Water':'💧','Push-ups':'�
 const defaults=[{name:'Заниматься спортом',description:'Тренировка 30 минут в день',icon:'🏋️',key:'push-ups'},{name:'Пить воду',description:'Выпить 8 стаканов в день',icon:'💧',key:'water'},{name:'Чтение',description:'Читать каждый день',icon:'📖',key:'reading'},{name:'Ранний сон',description:'Ложиться спать вовремя',icon:'🌙',key:'sleep'}];
 const STORE='habit-plus-local-v1';
 let habits=[],completions=new Map(),active=0,selectedDate=startOf(new Date()),calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+let pickerEditMode=false,pressTimer=null,pendingDeleteId=null,suppressPickerClick=false;
 const dateKey=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 function fromKey(s){const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2]);}
 function startOf(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
@@ -113,8 +119,31 @@ function render(){
  active=Math.max(0,Math.min(active,habits.length-1));
  const h=habits[active],prev=habits[(active-1+habits.length)%habits.length],next=habits[(active+1)%habits.length];
  $('carousel').innerHTML=cardHTML(prev,'back-left')+cardHTML(h,'active')+(habits.length>2?cardHTML(next,'back-right'):'');
- $('habit-picker').innerHTML='<button class="pick-item pick-add" id="add-habit"><span class="pick-icon">＋</span><span class="pick-name">Добавить<br>привычку</span></button>'+habits.map((x,i)=>'<button class="pick-item '+(i===active?'active':'')+'" data-pick="'+i+'"><span class="pick-icon">'+esc(x.icon||symbols[x.habit_key]||'✨')+'</span><span class="pick-name">'+esc(x.name)+'</span>'+(last50(x.id)>=1?'<span class="pick-check">✓</span>':'')+'</button>').join('');
- $('add-habit').addEventListener('click',()=>openHabit());$('habit-picker').querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{active=Number(b.dataset.pick);render();}));
+ $('habit-picker').innerHTML='<button class="pick-item pick-add" id="add-habit"><span class="pick-icon">＋</span><span class="pick-name">Добавить<br>привычку</span></button>'+habits.map((x,i)=>'<button class="pick-item '+(i===active?'active':'')+'" data-pick="'+i+'"><span class="pick-icon">'+esc(x.icon||symbols[x.habit_key]||'✨')+'</span><span class="pick-name">'+esc(x.name)+'</span>'+(last50(x.id)>=1?'<span class="pick-check">✓</span>':'')+(pickerEditMode?'<span class="pick-delete" data-delete="'+esc(x.id)+'" role="button" aria-label="Удалить '+esc(x.name)+'">×</span>':'')+'</button>').join('');
+ $('add-habit').addEventListener('click',()=>openHabit());
+ const picker=$('habit-picker');
+ picker.querySelectorAll('[data-pick]').forEach(b=>{
+  b.addEventListener('pointerdown',()=>{
+   if(b.dataset.delete) return;
+   clearTimeout(pressTimer);
+   pressTimer=setTimeout(()=>{
+    pickerEditMode=true;suppressPickerClick=true;render();
+    setTimeout(()=>{suppressPickerClick=false;},350);
+   },550);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(pressTimer)));
+  b.addEventListener('contextmenu',e=>{e.preventDefault();pickerEditMode=true;render();});
+  b.addEventListener('click',e=>{
+   if(e.target.closest('[data-delete]'))return;
+   if(suppressPickerClick||pickerEditMode){e.preventDefault();e.stopPropagation();return;}
+   active=Number(b.dataset.pick);render();
+  });
+ });
+ picker.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',e=>{
+  e.preventDefault();e.stopPropagation();pendingDeleteId=b.dataset.delete;
+  const h=habits.find(x=>x.id===pendingDeleteId);$('delete-confirm-name').textContent='Удалить «'+(h?.name||'привычку')+'» и все её отметки?';
+  openModal('delete-confirm-modal');
+ }));
  $('carousel').querySelectorAll('[data-shift]').forEach(b=>b.addEventListener('click',()=>{active=(active+Number(b.dataset.shift)+habits.length)%habits.length;render();}));
  $('carousel').querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openHabit(h.id)));
  updateOverall();updateStats();
@@ -140,6 +169,14 @@ $('habit-form').addEventListener('submit',async e=>{
  if(id){const h=habits.find(x=>x.id===id);h.name=name;h.description=description;h.icon=icon;}
  else{habits.push({id:'local-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name,description,icon,habit_key:'custom'});active=habits.length-1;}
  saveLocal();closeModal('habit-modal');render();
+});
+$('delete-cancel').addEventListener('click',()=>{pendingDeleteId=null;closeModal('delete-confirm-modal');});
+$('delete-confirm').addEventListener('click',()=>{
+ const id=pendingDeleteId;if(!id)return;
+ habits=habits.filter(h=>h.id!==id);
+ for(const k of [...completions.keys()])if(k.startsWith(id+'|'))completions.delete(k);
+ if(active>=habits.length)active=Math.max(0,habits.length-1);
+ pendingDeleteId=null;pickerEditMode=false;saveLocal();closeModal('delete-confirm-modal');render();
 });
 $('delete-habit').addEventListener('click',async()=>{
  const id=$('habit-id').value;if(!id||!confirm('Удалить привычку и её отметки?'))return;
