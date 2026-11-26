@@ -205,7 +205,7 @@ function load(){
  marks=new Map((Array.isArray(saved.completions)?saved.completions:[]).map(entry=>{const k=entry[0],v=entry[1];return [k,v===true?'done':v===false?'missed':(v==='done'||v==='missed'?v:null)];}).filter(entry=>entry[1]!==null));
  habits=habits.filter(h=>h&&typeof h.id==='string'&&typeof h.name==='string').map(h=>({id:h.id,name:h.name,description:h.description||'',icon:h.icon||'✨'}));
  if(!habits.length)habits=DEFAULTS.map(x=>Object.assign({},x));
- activeId=habits[0].id;save();
+ activeId=(habits.find(h=>h.id==='local-default-1')||habits[0]).id;save();
 }
 function activeHabit(){return habits.find(h=>h.id===activeId)||habits[0]||null;}
 function progressFor(id){
