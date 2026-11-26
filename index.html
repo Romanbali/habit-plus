@@ -1,351 +1,198 @@
 <!doctype html>
-<html lang="en" translate="no" class="notranslate">
+<html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#fff8fc">
-<meta name="google" content="notranslate">
-<title>Habit Plus</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#111012"><title>Трекер привычек</title>
 <style>
-:root{--ink:#17151a;--muted:#77717d;--green:#20b52b;--track:#e8deec;--page:#fff8fc;--col:58px;--gap:8px}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
-body{background:linear-gradient(180deg,#fffafd,#fff5fb)}
-button{font:inherit}
-.app{width:min(100%,880px);min-height:100vh;margin:auto;padding:34px 17px 70px;position:relative}
-.account-bar{display:none;justify-content:flex-end;align-items:center;gap:10px;min-height:28px;margin-bottom:18px}
-body.authenticated .account-bar{display:flex}
-.account-status{font-size:12px;color:var(--muted)}
-.account-button{border:1px solid #ded7df;background:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;color:#28242b;cursor:pointer}
-.month-head{height:64px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 12px 0}
-.month-title{font:700 clamp(30px,5vw,42px)/1 Georgia,serif;letter-spacing:-1.3px;text-align:center;margin:0}
-.month-nav{width:48px;height:48px;border:0;border-radius:18px;background:#e9eee8;color:#173d25;display:grid;place-items:center;cursor:pointer}
-.month-nav:last-child{justify-self:end}
-.month-nav svg{width:26px;height:26px;stroke:currentColor;stroke-width:2.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.timeline-viewport{margin-top:18px;overflow:hidden}
-.timeline-content{position:relative;width:100%;padding-bottom:8px}
-.date-row,.progress-row{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:var(--gap);width:100%;position:relative;z-index:5}
-.date-row{z-index:3;align-items:stretch;padding-bottom:3px}
-.day{width:100%;min-width:0;min-height:64px;border:0;border-radius:15px;background:rgba(255,255,255,.78);color:#55515c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:6px 0;user-select:none}
-.day .weekday{font-size:10px;font-weight:700;color:#948d98;line-height:1}
-.day .num{font-size:20px;font-weight:600;line-height:1}
-.day.selected{background:#8cae8a;color:#fff}
-.day.selected .weekday{color:rgba(255,255,255,.9)}
-.day.today:not(.selected){box-shadow:inset 0 0 0 1.5px #8cae8a;color:#547b56}
-.day.future{background:rgba(235,235,235,.45);color:#b8b8b8}
-.day.future .weekday,.day.future .num{color:#bcb8c0}
-.habit-list{display:flex;flex-direction:column;gap:20px;margin-top:50px}
-.habit-card{position:relative;z-index:auto;width:100%;min-width:0;border:1.5px solid var(--edge);background:var(--surface);border-radius:30px;padding:18px 18px 20px;box-shadow:0 7px 18px rgba(85,55,94,.065);touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .22s ease,box-shadow .22s ease}
-.habit-card.dragging{transition:none;box-shadow:0 12px 25px rgba(70,90,70,.16)}
-.habit-card.swiped-right{transform:translateX(12px);border-color:#a8d6a5}
-.habit-card.swiped-left{transform:translateX(-12px);border-color:#d8cbdc}
-.habit-top{height:68px;display:grid;grid-template-columns:68px minmax(130px,1fr) auto;align-items:center;gap:18px;position:relative;z-index:5}
-.icon-tile{width:68px;height:62px;border-radius:20px;background:var(--icon-bg);display:grid;place-items:center}
-.icon-tile svg{width:43px;height:43px;stroke:var(--icon-color);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.habit-name{font-size:clamp(21px,4vw,31px);line-height:1;font-weight:700;letter-spacing:-.7px;white-space:nowrap}
-.percent{font-size:clamp(21px,4vw,30px);font-weight:600;color:#56535f;letter-spacing:-.8px}
-.progress-row{z-index:3;margin-top:12px;align-items:center}
-.segment{width:100%;min-width:0;height:22px;border:0;border-radius:15px;background:var(--track);padding:0;cursor:pointer;position:relative;z-index:3}
-.segment.done{background:var(--green);box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
-.reading{--surface:rgba(245,231,250,.82);--edge:#f0e2f4;--icon-bg:rgba(226,208,238,.72);--icon-color:#55505d}
-.meditation{--surface:rgba(255,235,240,.84);--edge:#f8e1e8;--icon-bg:rgba(255,215,224,.72);--icon-color:#8d170f}
-.water{--surface:rgba(232,237,255,.86);--edge:#dfe5ff;--icon-bg:rgba(207,218,255,.72);--icon-color:#082b4c}
-.pushups{--surface:rgba(244,249,242,.9);--edge:#e1eee0;--icon-bg:rgba(222,235,216,.78);--icon-color:#0c351b}
-.habit-card::after{position:absolute;right:18px;top:12px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 20px Arial,sans-serif;opacity:0;pointer-events:none;z-index:5}
-.habit-card.done-animation::after{content:"✓";background:#20b52b;color:#fff;animation:pop .55s ease both}
-.habit-card.undo-animation::after{content:"↶";background:#887294;color:#fff;animation:pop .55s ease both}
-@keyframes pop{0%{opacity:0;transform:scale(.4)}60%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
-@media(max-width:650px){
- :root{--col:52px;--gap:6px}
- .app{padding:22px 12px 50px}
- .account-bar{margin-bottom:12px}
- .month-head{height:54px;padding:0 3px}
- .month-nav{width:42px;height:42px;border-radius:15px}
- .month-title{font-size:clamp(27px,7vw,35px)}
- .timeline-viewport{margin-top:14px}
- .day{min-height:56px;border-radius:12px}
- .day .weekday{font-size:9px}
- .day .num{font-size:18px}
- .habit-list{margin-top:36px;gap:15px}
- .habit-card{border-radius:24px;padding:13px 12px 16px}
- .habit-top{height:58px;grid-template-columns:54px minmax(115px,1fr) auto;gap:10px}
- .icon-tile{width:54px;height:52px;border-radius:17px}
- .icon-tile svg{width:36px;height:36px}
- .habit-name{font-size:clamp(18px,4.5vw,25px)}
- .percent{font-size:clamp(18px,4.5vw,25px)}
- .progress-row{margin-top:10px}
- .segment{height:17px;border-radius:12px}
-}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
-.tracker-content{display:none}
-body.authenticated .tracker-content{display:block}
-.welcome-screen{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#fff8fc,#f5edf7)}
-body.authenticated .welcome-screen{display:none}
-.welcome-card{width:min(100%,390px);text-align:center;background:rgba(255,255,255,.9);border:1px solid #eee4ef;border-radius:28px;padding:36px 26px 28px;box-shadow:0 18px 50px rgba(85,55,94,.09)}
-.welcome-mark{width:64px;height:64px;border-radius:20px;background:#e9eee8;color:#173d25;display:grid;place-items:center;font:700 36px Georgia,serif;margin:0 auto 20px}
-.welcome-card h1{font:700 36px Georgia,serif;margin:0 0 10px}
-.welcome-card p{font-size:14px;line-height:1.5;color:#716b75;margin:0 0 22px}
-.auth-google{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;height:50px;border:1px solid #ded9df;background:#fff;color:#262329;border-radius:13px;font-weight:700;font-size:15px;cursor:pointer}
-.auth-google:disabled{opacity:.6}
-.google-g{font-weight:800;font-size:19px;color:#4285f4}
-.welcome-foot{font-size:12px;line-height:1.45;color:#96909a;margin-top:22px}
-.welcome-message{font-size:13px;color:#62566a;min-height:18px;margin-bottom:8px}
+:root{color-scheme:dark;--bg:#111012;--panel:#1c1a1e;--muted:#99969e;--green:#00d45b;--white:#f8f7f8;--line:#3a373d}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--white);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}button,input{font:inherit}button{color:inherit;cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.app{width:min(100%,560px);min-height:100dvh;margin:auto;padding:calc(env(safe-area-inset-top) + 22px) 20px calc(env(safe-area-inset-bottom) + 105px);position:relative}
+.topbar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d5d1d7;padding:0 0 22px;gap:12px}
+.brand{font-size:clamp(25px,6vw,36px);font-weight:850;letter-spacing:-1.4px;line-height:1.1}.top-actions{display:flex;gap:20px}.icon-btn{width:38px;height:38px;background:none;border:0;padding:4px;display:grid;place-items:center}.icon-btn svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.tagline{font-size:clamp(18px,4.6vw,25px);line-height:1.35;margin:29px 0 0;letter-spacing:-.35px}
+.home-view{display:block}.carousel-wrap{height:640px;position:relative;margin:72px -10px 0;display:flex;justify-content:center;align-items:flex-start;perspective:1100px}
+.habit-card{position:absolute;top:0;width:min(74%,390px);height:630px;background:#f9f9fa;color:#08090b;border-radius:31px;padding:34px 25px 24px;box-shadow:0 15px 40px #0008;display:flex;flex-direction:column;align-items:center;transform-origin:center center;transition:transform .32s ease,opacity .32s ease;overflow:hidden}
+.habit-card.back-left{transform:translate(-22%,35px) rotate(-5deg) scale(.94);z-index:1;opacity:.85;pointer-events:none}
+.habit-card.back-right{transform:translate(22%,35px) rotate(5deg) scale(.94);z-index:1;opacity:.8;pointer-events:none}
+.habit-card.active{z-index:3;transform:translateY(0) scale(1)}
+.card-controls{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:35px}
+.round-arrow{width:43px;height:43px;border:0;border-radius:50%;background:#111;color:white;font-size:27px;line-height:1;display:grid;place-items:center}
+.card-heading{font-size:23px;font-weight:850;letter-spacing:-.8px}
+.habit-symbol{width:82px;height:82px;border-radius:23px;background:#dceffc;color:#159fe6;display:grid;place-items:center;margin:8px 0 16px}
+.habit-symbol svg{width:48px;height:48px;stroke:currentColor;fill:none;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.habit-title{font-size:clamp(27px,6vw,39px);font-weight:900;letter-spacing:-1.1px;text-align:center;line-height:1.05;margin:0}
+.habit-desc{font-size:20px;color:#242329;text-align:center;line-height:1.35;margin:15px 0 0;min-height:48px}
+.week-grid{width:100%;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:auto;padding-top:20px}
+.week-day{text-align:center;min-width:0}
+.week-label{font-size:14px;font-weight:800;color:#111;line-height:1.4}
+.week-number{font-size:14px;color:#666;line-height:1.4;margin-bottom:8px}
+.day-state{width:min(100%,42px);aspect-ratio:1;border:1.5px solid #e4e4e7;border-radius:50%;background:#f7f7f8;color:#fff;font-size:22px;font-weight:800;display:grid;place-items:center;margin:auto;padding:0}
+.day-state.done{background:#0cc75a;border-color:#0cc75a}
+.day-state.missed{background:#ee5360;border-color:#ee5360;color:#fff}
+.day-state.neutral{background:#85858a;border-color:#85858a;color:white}
+.day-state.future{background:transparent;color:transparent;border-color:#dedee2}
+.big-percent{font-size:clamp(65px,17vw,104px);font-weight:900;letter-spacing:-5px;line-height:1;margin-top:28px;color:#171816}
+.card-foot{font-size:16px;color:#777;text-align:center;margin-top:10px}
+.habit-picker{display:flex;align-items:center;gap:13px;overflow-x:auto;scrollbar-width:none;margin:24px -20px 0;padding:0 20px 10px;overscroll-behavior-x:contain}
+.habit-picker::-webkit-scrollbar{display:none}
+.pick-item{width:100px;min-width:100px;height:104px;border-radius:24px;border:1px solid #29272b;background:#242226;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative}
+.pick-item.active{border:3px solid #00d45b;box-shadow:inset 0 0 0 2px #00d45b;background:#17251d}
+.pick-icon{font-size:30px;line-height:1.2}.pick-name{font-size:13px;font-weight:750;text-align:center;max-width:90px;line-height:1.15}.pick-check{position:absolute;right:-2px;top:-5px;width:24px;height:24px;border-radius:50%;background:#f4f4f5;color:#151515;font-size:17px;font-weight:900;display:grid;place-items:center}
+.pick-add{background:#073f28;border:0}.pick-add .pick-icon{font-size:38px;font-weight:300}.pick-add .pick-name{font-size:12px}
+.overall-card{margin-top:25px;width:100%;min-height:140px;border-radius:28px;background:linear-gradient(110deg,#242226,#1b191d);border:1px solid #302d32;display:flex;align-items:center;padding:20px 23px;gap:22px}
+.donut{width:116px;height:116px;min-width:116px;position:relative;display:grid;place-items:center}
+.donut svg{width:116px;height:116px;transform:rotate(-90deg)}
+.donut circle{fill:none;stroke-width:9}.donut .track{stroke:#4c4a4d}.donut .value{stroke:var(--green);stroke-linecap:round;stroke-dasharray:314;stroke-dashoffset:314;transition:stroke-dashoffset .3s}
+.donut b{position:absolute;font-size:25px;letter-spacing:-1px}
+.overall-divider{height:72px;width:1px;background:#4b474e}
+.overall-link{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:1;background:none;border:0;text-align:left;font-size:23px;font-weight:750;letter-spacing:-.6px;padding:0}
+.overall-link span:last-child{font-size:36px;font-weight:300}
+.bottom-nav{position:fixed;z-index:20;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,560px);padding:10px 14px calc(env(safe-area-inset-bottom) + 8px);background:#111012;border-top:1px solid #302d32;display:grid;grid-template-columns:repeat(3,1fr)}
+.nav-btn{border:0;background:none;color:#aaa7af;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0;font-size:17px}
+.nav-btn svg{width:33px;height:33px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn.active{color:var(--green)}.nav-btn.active svg{fill:var(--green);stroke:var(--green)}
+.sub-view{display:none;padding-top:26px}.sub-view.active{display:block}.view-title{font-size:30px;font-weight:850;margin:0 0 20px}
+.panel{background:#1e1c20;border:1px solid #302d32;border-radius:24px;padding:20px;margin:14px 0}
+.stat-row{display:flex;justify-content:space-between;gap:10px;padding:14px 0;border-bottom:1px solid #39353c}.stat-row:last-child{border:0}
+.primary{border:0;background:var(--green);color:#06140b;font-weight:850;border-radius:16px;padding:15px 19px;width:100%;margin-top:12px}
+.secondary{border:1px solid #454149;background:#29262c;color:white;border-radius:14px;padding:12px 16px}
+.input{width:100%;background:#29262c;border:1px solid #49444d;border-radius:13px;color:white;padding:14px;margin:7px 0 14px}
+.label{display:block;color:#c2bec5;font-size:14px;margin:9px 0 4px}
+.modal{position:fixed;z-index:40;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;padding:18px}.modal.open{display:flex}
+.sheet{width:min(100%,520px);max-height:88dvh;overflow:auto;background:#201e22;border:1px solid #3c3840;border-radius:28px;padding:23px 21px calc(env(safe-area-inset-bottom) + 24px);box-shadow:0 20px 70px #000b}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.sheet-head h2{font-size:24px;margin:0}.close{border:0;background:#343137;border-radius:50%;width:36px;height:36px;font-size:22px}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;margin:14px 0}.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.calendar-grid button{aspect-ratio:1;border:0;border-radius:12px;background:#302d33;color:white}.calendar-grid button.selected{background:var(--green);color:#06140b;font-weight:900}.calendar-grid button.dim{color:#666;background:transparent}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #3b373e}
+.login{position:fixed;inset:0;z-index:60;background:#111012;display:flex;align-items:center;justify-content:center;padding:26px}.login-box{width:min(100%,380px);text-align:center}.login-box h1{font-size:36px}.login-box p{color:#aaa;line-height:1.5}.login button{background:white;color:#151515;border:0;border-radius:15px;padding:16px 20px;width:100%;font-weight:800;font-size:16px}.login-msg{min-height:24px;color:#aaa;margin:10px 0}
+@media(max-width:390px){.app{padding-left:15px;padding-right:15px}.carousel-wrap{height:600px;margin-top:54px}.habit-card{height:590px;width:77%;padding:28px 17px 20px}.card-controls{margin-bottom:25px}.habit-picker{margin-left:-15px;margin-right:-15px;padding-left:15px;padding-right:15px}.pick-item{width:88px;min-width:88px;height:96px}.overall-card{padding:16px;gap:14px}.donut,.donut svg{width:96px;height:96px;min-width:96px}.overall-divider{height:62px}.overall-link{font-size:19px}.nav-btn{font-size:15px}}
 </style>
 </head>
-<body class="notranslate">
+<body>
 <main class="app">
- <div class="account-bar"><span class="account-status" id="cloud-status">Connecting…</span><button class="account-button" id="account-button">Sign out</button></div>
- <div class="tracker-content">
-  <header class="month-head">
-   <button class="month-nav" id="prev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></svg></button>
-   <h1 class="month-title" id="month">Month</h1>
-   <button class="month-nav" id="next" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="m9 4 8 8-8 8"/></svg></button>
-  </header>
-  <div class="timeline-viewport" id="timeline-viewport">
-   <div class="timeline-content" id="timeline-content">
-    <nav class="date-row" id="dates" aria-label="Monthly calendar"></nav>
-    <section class="habit-list" id="habit-list" aria-label="Habits"></section>
-   </div>
-  </div>
- </div>
- <section class="welcome-screen" id="welcome-screen">
-  <div class="welcome-card">
-   <div class="welcome-mark">H</div><h1>Habit Plus</h1>
-   <p>Your habits. Your progress. All in sync.</p>
-   <div class="welcome-message" id="welcome-message" role="status" aria-live="polite"></div>
-   <button class="auth-google" id="welcome-google" type="button"><span class="google-g">G</span> Continue with Google</button>
-   <div class="welcome-foot">Your progress stays private and syncs across your devices.</div>
-  </div>
+ <header class="topbar"><div class="brand">Трекер привычек</div><div class="top-actions"><button class="icon-btn" id="calendar-open" aria-label="Календарь"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></button><button class="icon-btn" id="settings-open" aria-label="Настройки"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1 1.4 1.1-1.5 2.6-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-3l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.5-2.6 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.5-2.6 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h3l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.5 2.6-1.4 1.1a8 8 0 0 1 0 2Z"/></svg></button></div></header>
+ <section id="home-view" class="home-view">
+  <p class="tagline">Создавайте полезные привычки<br>и отмечайте их каждый день!</p>
+  <div class="carousel-wrap" id="carousel"></div>
+  <div class="habit-picker" id="habit-picker"></div>
+  <button class="overall-card" id="overall-open"><div class="donut"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="50"/><circle class="value" id="overall-ring" cx="60" cy="60" r="50"/></svg><b id="overall-percent">0%</b></div><div class="overall-divider"></div><div class="overall-link"><span>Общий прогресс</span><span>›</span></div></button>
  </section>
+ <section id="stats-view" class="sub-view"><h2 class="view-title">Статистика</h2><div class="panel"><div class="donut"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="50"/><circle class="value" id="stats-ring" cx="60" cy="60" r="50"/></svg><b id="stats-percent">0%</b></div><h2>Общий прогресс</h2><p style="color:#aaa">За последние 50 дней</p></div><div id="stats-list" class="panel"></div></section>
+ <section id="profile-view" class="sub-view"><h2 class="view-title">Профиль</h2><div class="panel"><div style="font-size:22px;font-weight:800" id="profile-name">Мой профиль</div><div id="profile-email" style="color:#aaa;margin-top:6px"></div></div><div class="panel"><div class="setting-row"><span>Привычек</span><b id="profile-count">0</b></div><div class="setting-row"><span>Отметок выполнено</span><b id="profile-done">0</b></div><button class="secondary" id="profile-settings" style="width:100%;margin-top:16px">Настройки</button><button class="secondary" id="signout" style="width:100%;margin-top:10px">Выйти из аккаунта</button></div></section>
 </main>
-<script>
-(()=>{
- const $=id=>document.getElementById(id);
- const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
- const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
- const STORAGE_KEY='habit-plus-state-v1';
- const names=['Reading','Meditation','Water','Push-ups'];
- const icons={
-  'Reading':'<svg viewBox="0 0 64 64"><path d="M32 17c-7-9-22-8-27-2v37c8-5 19-4 27 3 8-7 19-8 27-3V15c-6-6-20-7-27 2Z"/><path d="M32 17v38"/></svg>',
-  'Meditation':'<svg viewBox="0 0 64 64"><path d="M32 10c-8 8-12 16-12 24 0 8 5 13 12 16 7-3 12-8 12-16 0-8-4-16-12-24Z"/><path d="M20 29C10 26 5 29 4 33c5 8 11 12 20 12M44 29c10-3 15 0 16 4-5 8-11 12-20 12"/><path d="M20 45c-1 5 2 8 6 10M44 45c1 5-2 8-6 10M26 53h12"/></svg>',
-  'Water':'<svg viewBox="0 0 64 64"><path d="M32 7C24 20 14 31 14 42a18 18 0 0 0 36 0C50 31 40 20 32 7Z"/></svg>',
-  'Push-ups':'<svg viewBox="0 0 64 64"><circle cx="47" cy="14" r="5" fill="currentColor" stroke="none"/><path d="m42 19-11 7-8 7-17 8 3 7 20-7 12-7 7-2 7 5 4-6-9-9Z" fill="currentColor" stroke="none"/><path d="m17 43-6 11M43 39l8 10"/></svg>'
- };
- let selectedDate=dayStart(new Date());
- let viewedMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
- let monthAnchorDay=selectedDate.getDate();
- const data=new Map();
- const demo={
-  'Reading':{total:21,tail:[1,1,0,1,1,0,1,1,0,1]},
-  'Meditation':{total:18,tail:[1,0,1,1,1,0,0,1,0,0]},
-  'Water':{total:27,tail:[1,1,0,1,1,1,1,1,1,1]},
-  'Push-ups':{total:23,tail:[1,1,0,1,1,0,1,1,0,0]}
- };
- function dayStart(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
- function shift(d,n){const x=dayStart(d);x.setDate(x.getDate()+n);return x;}
- function key(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
- function loadState(){
-  let saved={};try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')||{};}catch(e){console.warn(e);}
-  const today=dayStart(new Date());selectedDate=today;viewedMonth=new Date(today.getFullYear(),today.getMonth(),1);monthAnchorDay=today.getDate();
-  names.forEach(name=>{
-   const map=new Map(),spec=demo[name],tailStart=shift(today,-9),older=spec.total-spec.tail.reduce((a,b)=>a+b,0);
-   for(let i=0;i<20;i++)map.set(key(shift(today,-29+i)),i<older);
-   spec.tail.forEach((v,i)=>map.set(key(shift(tailStart,i)),!!v));
-   Object.entries(saved.habits?.[name]||{}).forEach(([date,value])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(date))map.set(date,value===true);});
-   data.set(name,map);
-  });
- }
- function saveState(){
-  const habits={};names.forEach(name=>habits[name]=Object.fromEntries(data.get(name)));
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({selectedDate:key(selectedDate),habits}));}catch(e){console.warn(e);}
- }
- function visibleDates(){return Array.from({length:10},(_,i)=>shift(selectedDate,i-9));}
- function updatePercent(card){
-  const map=data.get(card.dataset.name),start=shift(dayStart(new Date()),-29);let count=0;
-  for(let i=0;i<30;i++)if(map.get(key(shift(start,i))))count++;
-  card.querySelector('.percent').textContent=Math.round(count/30*100)+'%';
- }
- function renderCards(){
-  const list=$('habit-list');list.innerHTML='';const dates=visibleDates();
-  names.forEach(name=>{
-   const card=document.createElement('article');card.className='habit-card '+({'Reading':'reading','Meditation':'meditation','Water':'water','Push-ups':'pushups'}[name]);card.dataset.name=name;
-   card.innerHTML='<div class="habit-top"><div class="icon-tile">'+icons[name]+'</div><div class="habit-name">'+name+'</div><div class="percent">0%</div></div><div class="progress-row" aria-label="'+name+' progress"></div>';
-   const row=card.querySelector('.progress-row'),map=data.get(name);
-   dates.forEach(date=>{const done=map.get(key(date))===true,segment=document.createElement('button');segment.type='button';segment.className='segment'+(done?' done':'');segment.setAttribute('aria-label',key(date)+(done?' complete':' incomplete'));segment.title=date.toLocaleDateString('en',{month:'long',day:'numeric'})+(done?' — complete':' — incomplete');row.appendChild(segment);});
-   updatePercent(card);bindSwipe(card);list.appendChild(card);
-  });
- }
- function renderDates(){
-  const dates=$('dates');dates.innerHTML='';const todayKey=key(new Date());
-  visibleDates().forEach(date=>{
-   const dateKey=key(date),isToday=dateKey===todayKey,isFuture=dateKey>todayKey,button=document.createElement('button');button.type='button';
-   button.className='day'+(dateKey===key(selectedDate)?' selected':'')+(isToday?' today':'')+(isFuture?' future':'');button.dataset.date=dateKey;
-   button.setAttribute('aria-label',date.toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
-   button.innerHTML='<span class="weekday">'+weekdays[date.getDay()]+'</span><span class="num">'+date.getDate()+'</span>';
-   button.addEventListener('click',()=>{selectedDate=dayStart(date);monthAnchorDay=date.getDate();viewedMonth=new Date(date.getFullYear(),date.getMonth(),1);saveState();render();});
-   if(dateKey===key(selectedDate))button.setAttribute('aria-current','date');dates.appendChild(button);
-  });
-  $('month').textContent=monthNames[selectedDate.getMonth()]+' '+selectedDate.getFullYear();
- }
- function render(){renderDates();renderCards();}
- function changeMonth(delta){
-  const next=new Date(viewedMonth.getFullYear(),viewedMonth.getMonth()+delta,1),last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
-  viewedMonth=next;selectedDate=new Date(next.getFullYear(),next.getMonth(),Math.min(monthAnchorDay,last));saveState();render();
- }
- $('prev').addEventListener('click',()=>changeMonth(-1));$('next').addEventListener('click',()=>changeMonth(1));
- function mark(card,done){
-  const map=data.get(card.dataset.name);map.set(key(selectedDate),!!done);saveState();
-  updatePercent(card);card.classList.remove('done-animation','undo-animation','swiped-left','swiped-right');void card.offsetWidth;card.classList.add(done?'done-animation':'undo-animation',done?'swiped-right':'swiped-left');
-  setTimeout(()=>card.classList.remove('done-animation','undo-animation','swiped-left','swiped-right'),700);
- }
- function bindSwipe(card){
-  let sx=0,sy=0,tracking=false,moved=false;
-  const completed=()=>data.get(card.dataset.name).get(key(selectedDate))===true;
-  const start=(x,y)=>{sx=x;sy=y;tracking=true;moved=false;card.classList.add('dragging');};
-  const move=(x,y,e)=>{if(!tracking)return;const dx=x-sx,dy=y-sy;if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.05){moved=true;if(e?.cancelable)e.preventDefault();const shiftX=Math.max(completed()?-64:0,Math.min(64,dx*.7));card.style.transform='translateX('+shiftX+'px)';}};
-  const end=(x,y)=>{if(!tracking)return;tracking=false;const dx=x-sx,dy=y-sy;card.classList.remove('dragging');card.style.transform='';if(moved&&Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)*1.05){if(dx>0)mark(card,true);else if(completed())mark(card,false);}};
-  const cancel=()=>{tracking=false;moved=false;card.classList.remove('dragging');card.style.transform='';};
-  card.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')start(e.clientX,e.clientY);});
-  card.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')move(e.clientX,e.clientY,e);});
-  card.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')end(e.clientX,e.clientY);});
-  card.addEventListener('pointercancel',cancel);
-  card.addEventListener('touchstart',e=>{if(e.touches.length===1)start(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
-  card.addEventListener('touchmove',e=>{if(tracking&&e.touches.length===1)move(e.touches[0].clientX,e.touches[0].clientY,e);},{passive:false});
-  card.addEventListener('touchend',e=>{const t=e.changedTouches[0];if(t)end(t.clientX,t.clientY);},{passive:true});
-  card.addEventListener('touchcancel',cancel);
- }
- loadState();render();
-})();
-</script>
+<nav class="bottom-nav">
+ <button class="nav-btn active" data-view="home"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1Z"/></svg>Главная</button>
+ <button class="nav-btn" data-view="stats"><svg viewBox="0 0 24 24"><path d="M3 20h4v-6H3zM10 20h4V9h-4zM17 20h4V3h-4z"/></svg>Статистика</button>
+ <button class="nav-btn" data-view="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0Z"/></svg>Профиль</button>
+</nav>
+<div class="modal" id="habit-modal"><div class="sheet"><div class="sheet-head"><h2 id="habit-modal-title">Новая привычка</h2><button class="close" data-close="habit-modal">×</button></div><form id="habit-form"><input type="hidden" id="habit-id"><label class="label">Название</label><input class="input" id="habit-name" maxlength="36" required placeholder="Например, Прогулка"><label class="label">Описание</label><input class="input" id="habit-desc" maxlength="80" placeholder="Небольшая цель на каждый день"><label class="label">Иконка (эмодзи)</label><input class="input" id="habit-icon" maxlength="4" value="✨"><button class="primary" type="submit">Сохранить привычку</button></form><button class="secondary" id="delete-habit" style="width:100%;margin-top:12px;display:none">Удалить привычку</button></div></div>
+<div class="modal" id="calendar-modal"><div class="sheet"><div class="sheet-head"><h2>Календарь</h2><button class="close" data-close="calendar-modal">×</button></div><div class="calendar-head"><button class="secondary" id="cal-prev">‹</button><b id="cal-month"></b><button class="secondary" id="cal-next">›</button></div><div class="calendar-grid" id="calendar-grid"></div><button class="primary" id="calendar-today">Сегодня</button></div></div>
+<div class="modal" id="settings-modal"><div class="sheet"><div class="sheet-head"><h2>Настройки</h2><button class="close" data-close="settings-modal">×</button></div><div class="setting-row"><span>Тёмная тема</span><b>Включена</b></div><div class="setting-row"><span>Расчёт прогресса</span><b>50 дней</b></div><button class="secondary" id="settings-edit" style="width:100%;margin-top:16px">Управление привычками</button><button class="secondary" id="settings-signout" style="width:100%;margin-top:10px">Выйти из аккаунта</button></div></div>
+<div class="login" id="login"><div class="login-box"><div style="font-size:48px">✓</div><h1>Трекер привычек</h1><p>Войдите через Google, чтобы ваши привычки и отметки сохранялись и синхронизировались.</p><div class="login-msg" id="login-msg"></div><button id="google-login">Продолжить с Google</button></div></div>
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-const SUPABASE_URL='https://ifhavtkexjpfgjhmyrxp.supabase.co';
-const SUPABASE_KEY='sb_publishable_ZIcZYPUOIh_tX0Y29F_yjA_yq4oja_d';
-const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storage:window.localStorage,storageKey:'habit-plus-google-session',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const STORAGE_KEY='habit-plus-state-v1';
-const defaults=[['Reading','reading',0],['Meditation','meditation',1],['Water','water',2],['Push-ups','push-ups',3]];
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+const supabase=createClient('https://ifhavtkexjpfgjhmyrxp.supabase.co','sb_publishable_ZIcZYPUOIh_tX0Y29F_yjA_yq4oja_d',{auth:{storage:localStorage,storageKey:'habit-plus-google-session',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
-let currentUser=null, syncing=false, hydrating=false, habitIds={};
-const status=(s)=>$('cloud-status').textContent=s;
-let authBusy=false;
-async function startGoogleSignIn(){
- if(authBusy)return;
- authBusy=true;$('welcome-google').disabled=true;$('welcome-message').textContent='Connecting to Google…';
+const monthNames=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const shortDays=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const symbols={'Reading':'📖','Meditation':'🌙','Water':'💧','Push-ups':'🏋️','reading':'📖','meditation':'🌙','water':'💧','push-ups':'🏋️'};
+const defaults=[{name:'Заниматься спортом',description:'Тренировка 30 минут в день',icon:'🏋️',key:'push-ups'},{name:'Пить воду',description:'Выпить 8 стаканов в день',icon:'💧',key:'water'},{name:'Чтение',description:'Читать каждый день',icon:'📖',key:'reading'},{name:'Ранний сон',description:'Ложиться спать вовремя',icon:'🌙',key:'sleep'}];
+let user=null,habits=[],completions=new Map(),active=0,selectedDate=startOf(new Date()),calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1),busy=false;
+const dateKey=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+function fromKey(s){const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2]);}
+function startOf(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function addDays(d,n){const x=startOf(d);x.setDate(x.getDate()+n);return x;}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function statusKey(hid,date){return hid+'|'+dateKey(date);}
+function getStatus(hid,date){return completions.has(statusKey(hid,date))?completions.get(statusKey(hid,date)):null;}
+function setStatusLocal(hid,date,value){const k=statusKey(hid,date);if(value===null)completions.delete(k);else completions.set(k,value);}
+function last50(hid){let done=0;for(let i=0;i<50;i++)if(getStatus(hid,addDays(startOf(new Date()),-i))===true)done++;return Math.round(done/50*100);}
+function overall(){if(!habits.length)return 0;let done=0,total=habits.length*50;habits.forEach(h=>{for(let i=0;i<50;i++)if(getStatus(h.id,addDays(startOf(new Date()),-i))===true)done++;});return Math.round(done/total*100);}
+function ring(id,pct){const el=$(id);if(el)el.style.strokeDashoffset=314-(314*pct/100);}
+function render(){
+ if(!habits.length){$('carousel').innerHTML='<div style="color:#aaa;padding:50px 15px;text-align:center">Добавьте первую привычку</div>';return;}
+ active=Math.max(0,Math.min(active,habits.length-1));
+ const h=habits[active],prev=habits[(active-1+habits.length)%habits.length],next=habits[(active+1)%habits.length];
+ $('carousel').innerHTML=cardHTML(prev,'back-left')+cardHTML(h,'active')+(habits.length>2?cardHTML(next,'back-right'):'');
+ $('habit-picker').innerHTML='<button class="pick-item pick-add" id="add-habit"><span class="pick-icon">＋</span><span class="pick-name">Добавить<br>привычку</span></button>'+habits.map((x,i)=>'<button class="pick-item '+(i===active?'active':'')+'" data-pick="'+i+'"><span class="pick-icon">'+esc(x.icon||symbols[x.habit_key]||'✨')+'</span><span class="pick-name">'+esc(x.name)+'</span>'+(last50(x.id)>=1?'<span class="pick-check">✓</span>':'')+'</button>').join('');
+ $('add-habit').addEventListener('click',()=>openHabit());$('habit-picker').querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{active=Number(b.dataset.pick);render();}));
+ $('carousel').querySelectorAll('[data-shift]').forEach(b=>b.addEventListener('click',()=>{active=(active+Number(b.dataset.shift)+habits.length)%habits.length;render();}));
+ $('carousel').querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openHabit(h.id)));
+ updateOverall();updateStats();
+}
+function cardHTML(h,layer){
+ const pct=last50(h.id),days=Array.from({length:7},(_,i)=>addDays(selectedDate,i-6));
+ return '<article class="habit-card '+layer+'"><div class="card-controls"><button class="round-arrow" data-shift="-1">←</button><div class="card-heading">Мои привычки</div><button class="round-arrow" data-shift="1">→</button></div><button data-edit="'+esc(h.id)+'" class="habit-symbol" aria-label="Редактировать">'+esc(h.icon||symbols[h.habit_key]||'✨')+'</button><h2 class="habit-title">'+esc(h.name)+'</h2><p class="habit-desc">'+esc(h.description||'Отмечайте выполнение каждый день')+'</p><div class="week-grid">'+days.map(d=>{const s=getStatus(h.id,d),future=dateKey(d)>dateKey(new Date()),dow=(d.getDay()+6)%7;let cls=s===true?'done':s===false?'missed':future?'future':'neutral';let glyph=s===true?'✓':s===false?'×':future?'':'✓';return '<div class="week-day"><div class="week-label">'+shortDays[dow]+'</div><div class="week-number">'+d.getDate()+'</div><button class="day-state '+cls+'" data-date="'+dateKey(d)+'" data-habit="'+esc(h.id)+'" aria-label="'+dateKey(d)+'">'+glyph+'</button></div>';}).join('')+'</div><div class="big-percent">'+pct+'%</div><div class="card-foot">Расчёт за последние 50 дней</div></article>';
+}
+function updateOverall(){const p=overall();$('overall-percent').textContent=p+'%';ring('overall-ring',p);}
+function updateStats(){
+ const p=overall();$('stats-percent').textContent=p+'%';ring('stats-ring',p);
+ $('stats-list').innerHTML=habits.map(h=>'<div class="stat-row"><span>'+esc(h.icon||'✨')+' '+esc(h.name)+'</span><b>'+last50(h.id)+'%</b></div>').join('');
+ $('profile-count').textContent=habits.length;let n=0;completions.forEach(v=>{if(v===true)n++;});$('profile-done').textContent=n;
+}
+async function persistStatus(hid,date,value){
+ setStatusLocal(hid,date,value);render();
+ const row={user_id:user.id,habit_id:hid,completed_on:dateKey(date),is_completed:value===true,updated_at:new Date().toISOString()};
  try{
-  const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://romanbali.github.io/habit-plus/'}});
-  if(error)throw error;
- }catch(error){
-  $('welcome-message').textContent=error.message||'Google sign-in is unavailable. Please try again.';
-  authBusy=false;$('welcome-google').disabled=false;
- }
+  let q;if(value===null)q=await supabase.from('habit_completions').delete().eq('user_id',user.id).eq('habit_id',hid).eq('completed_on',dateKey(date));
+  else q=await supabase.from('habit_completions').upsert(row,{onConflict:'user_id,habit_id,completed_on'});
+  if(q.error)throw q.error;
+ }catch(e){console.error(e);alert('Не удалось сохранить отметку. Проверьте подключение.');}
 }
-$('welcome-google').addEventListener('click',startGoogleSignIn);
-$('account-button').addEventListener('click',async()=>{
- if(currentUser){if(confirm('Sign out of Habit Plus on this device?')) await supabase.auth.signOut();}
- else startGoogleSignIn();
-});
-async function ensureHabits(){
- const {data,error}=await supabase.from('habits').select('id,habit_key,name,sort_order').order('sort_order');
- if(error)throw error;
- if(!data.length){
-  const rows=defaults.map(([name,slug,sort_order])=>({user_id:currentUser.id,name,habit_key:slug,sort_order}));
-  const {error:insertError}=await supabase.from('habits').insert(rows);
-  if(insertError)throw insertError;
-  return ensureHabits();
- }
- data.forEach(h=>habitIds[h.name]=h.id);
-}
-function dateKey(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
-function fromLocalDate(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
-async function loadCloud(){
- status('Loading cloud data…');
- await ensureHabits();
- const [{data:rows,error:readError},{data:settings,error:settingsError}]=await Promise.all([
-  supabase.from('habit_completions').select('habit_id,completed_on,is_completed'),
-  supabase.from('user_settings').select('selected_date').maybeSingle()
- ]);
- if(readError)throw readError;if(settingsError)throw settingsError;
- const today=dateKey(new Date());
- const legacy=(()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null}})();
- const migrating=rows.length===0 && legacy?.habits && Object.keys(legacy.habits).length>0;
- const selected=today;
- const local={};
- defaults.forEach(([name])=>{
-  local[name]={};
-  const start=fromLocalDate(selected);
-  for(let i=29;i>=0;i--){const d=new Date(start);d.setDate(d.getDate()-i);local[name][dateKey(d)]=false;}
- });
- const idToName=Object.fromEntries(Object.entries(habitIds).map(([n,id])=>[id,n]));
- if(migrating){
-  const importRows=[];
-  for(const [name,dates] of Object.entries(legacy.habits)){
-   const habit_id=habitIds[name];if(!habit_id)continue;
-   for(const [completed_on,value] of Object.entries(dates||{})){
-    if(/^\d{4}-\d{2}-\d{2}$/.test(completed_on)){
-     local[name][completed_on]=value===true;
-     importRows.push({user_id:currentUser.id,habit_id,completed_on,is_completed:value===true});
-    }
-   }
-  }
-  if(importRows.length){
-   const {error:importError}=await supabase.from('habit_completions').upsert(importRows,{onConflict:'user_id,habit_id,completed_on'});
-   if(importError)throw importError;
-  }
- }
- rows.forEach(row=>{const name=idToName[row.habit_id];if(name)local[name][row.completed_on]=row.is_completed;});
- const serialized=JSON.stringify({selectedDate:selected,habits:local});
- if(localStorage.getItem(STORAGE_KEY)!==serialized){
-  hydrating=true;localStorage.setItem(STORAGE_KEY,serialized);hydrating=false;
-  status(migrating?'Imported browser history':'Synced');
-  location.reload();
- }else status('Synced');
-}
-async function syncLocalState(raw){
- if(!currentUser||syncing||hydrating)return;
- let state;try{state=JSON.parse(raw);}catch{return;}
- syncing=true;status('Saving…');
+$('carousel').addEventListener('click',e=>{const b=e.target.closest('[data-date][data-habit]');if(!b)return;const d=fromKey(b.dataset.date),old=getStatus(b.dataset.habit,d),next=old===null?true:old===true?false:null;persistStatus(b.dataset.habit,d,next);});
+function openModal(id){$(id).classList.add('open');}
+function closeModal(id){$(id).classList.remove('open');}
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+function openHabit(id){const h=id?habits.find(x=>x.id===id):null;$('habit-modal-title').textContent=h?'Редактировать привычку':'Новая привычка';$('habit-id').value=h?.id||'';$('habit-name').value=h?.name||'';$('habit-desc').value=h?.description||'';$('habit-icon').value=h?.icon||'✨';$('delete-habit').style.display=h?'block':'none';openModal('habit-modal');}
+$('habit-form').addEventListener('submit',async e=>{
+ e.preventDefault();const id=$('habit-id').value,name=$('habit-name').value.trim(),description=$('habit-desc').value.trim(),icon=$('habit-icon').value.trim()||'✨';if(!name)return;
  try{
-  const rows=[];
-  for(const [name,dates] of Object.entries(state.habits||{})){
-   const habit_id=habitIds[name];if(!habit_id)continue;
-   for(const [completed_on,value] of Object.entries(dates||{})){
-    if(/^\d{4}-\d{2}-\d{2}$/.test(completed_on))
-     rows.push({user_id:currentUser.id,habit_id,completed_on,is_completed:value===true,updated_at:new Date().toISOString()});
-   }
-  }
-  if(rows.length){
-   const {error}=await supabase.from('habit_completions').upsert(rows,{onConflict:'user_id,habit_id,completed_on'});
-   if(error)throw error;
-  }
-  const {error:settingsError}=await supabase.from('user_settings').upsert({user_id:currentUser.id,selected_date:state.selectedDate||dateKey(new Date()),updated_at:new Date().toISOString()},{onConflict:'user_id'});
-  if(settingsError)throw settingsError;
-  status('Synced');
- }catch(error){console.error('Cloud sync failed',error);status('Sync error — check connection');}
- finally{syncing=false;}
-}
-const originalSetItem=Storage.prototype.setItem;
-Storage.prototype.setItem=function(key,value){
- originalSetItem.call(this,key,value);
- if(key===STORAGE_KEY)syncLocalState(value);
-};
-async function onSession(session){
- currentUser=session?.user||null;
- document.body.classList.toggle('authenticated',!!currentUser);
- if(currentUser){
-  $('account-button').textContent='Sign out';
-  try{await loadCloud();}catch(error){console.error(error);status('Cloud error');}
-  // Wait until authenticated content is visible before measuring the calendar.
-  requestAnimationFrame(()=>requestAnimationFrame(()=>window.alignHabitCalendarToToday?.()));
- }else{
-  $('account-button').textContent='Sign in';
-  status('Not signed in');
- }
-}
-supabase.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>onSession(session),0);});
-supabase.auth.getSession().then(({data,error})=>{
- if(error){status('Connection error');return;}
- onSession(data.session);
+  if(id){const {error}=await supabase.from('habits').update({name}).eq('id',id).eq('user_id',user.id);if(error)throw error;const h=habits.find(x=>x.id===id);h.name=name;h.description=description;h.icon=icon;}
+  else{const {data,error}=await supabase.from('habits').insert({user_id:user.id,name,habit_key:'custom-'+Date.now(),sort_order:habits.length}).select().single();if(error)throw error;habits.push({...data,description,icon});active=habits.length-1;}
+  closeModal('habit-modal');render();
+ }catch(err){console.error(err);alert('Не удалось сохранить привычку: '+err.message);}
 });
+$('delete-habit').addEventListener('click',async()=>{
+ const id=$('habit-id').value;if(!id||!confirm('Удалить привычку и её отметки?'))return;
+ try{const {error}=await supabase.from('habits').delete().eq('id',id).eq('user_id',user.id);if(error)throw error;habits=habits.filter(h=>h.id!==id);for(const k of [...completions.keys()])if(k.startsWith(id+'|'))completions.delete(k);active=0;closeModal('habit-modal');render();}catch(e){alert('Не удалось удалить: '+e.message);}
+});
+function renderCalendar(){
+ const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth(),first=new Date(y,m,1),start=(first.getDay()+6)%7,last=new Date(y,m+1,0).getDate();
+ $('cal-month').textContent=monthNames[m]+' '+y;
+ let html=shortDays.map(d=>'<div style="text-align:center;color:#aaa;font-size:12px;padding:8px 0">'+d+'</div>').join('');
+ for(let i=0;i<start;i++)html+='<button class="dim" disabled></button>';
+ for(let d=1;d<=last;d++){const date=new Date(y,m,d),sel=dateKey(date)===dateKey(selectedDate);html+='<button class="'+(sel?'selected':'')+'" data-calendar-day="'+d+'">'+d+'</button>';}
+ $('calendar-grid').innerHTML=html;
+ $('calendar-grid').querySelectorAll('[data-calendar-day]').forEach(b=>b.addEventListener('click',()=>{selectedDate=new Date(y,m,Number(b.dataset.calendarDay));renderCalendar();render();closeModal('calendar-modal');}));
+}
+$('calendar-open').addEventListener('click',()=>{calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);renderCalendar();openModal('calendar-modal');});
+$('cal-prev').addEventListener('click',()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar();});
+$('cal-next').addEventListener('click',()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar();});
+$('calendar-today').addEventListener('click',()=>{selectedDate=startOf(new Date());calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);renderCalendar();render();closeModal('calendar-modal');});
+$('settings-open').addEventListener('click',()=>openModal('settings-modal'));$('profile-settings').addEventListener('click',()=>openModal('settings-modal'));
+$('settings-edit').addEventListener('click',()=>{closeModal('settings-modal');openHabit();});
+$('settings-signout').addEventListener('click',signOut);$('signout').addEventListener('click',signOut);
+async function signOut(){if(confirm('Выйти из аккаунта?'))await supabase.auth.signOut();}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('active',x===b));['home','stats','profile'].forEach(v=>$(v+'-view').classList.toggle('active',v===b.dataset.view));}));
+$('overall-open').addEventListener('click',()=>document.querySelector('[data-view="stats"]').click());
+async function loadData(){
+ const {data:rows,error}=await supabase.from('habits').select('*').order('sort_order');if(error)throw error;
+ if(!rows.length){const {data:created,error:ce}=await supabase.from('habits').insert(defaults.map((h,i)=>({user_id:user.id,name:h.name,habit_key:h.key,sort_order:i}))).select();if(ce)throw ce;habits=created.map((h,i)=>({...h,description:defaults[i].description,icon:defaults[i].icon}));}
+ else habits=rows.map(h=>({...h,description:defaults.find(x=>x.key===h.habit_key)?.description||'Отмечайте выполнение каждый день',icon:defaults.find(x=>x.key===h.habit_key)?.icon||symbols[h.habit_key]||'✨'}));
+ const ids=habits.map(h=>h.id);
+ if(ids.length){const {data:marks,error:me}=await supabase.from('habit_completions').select('habit_id,completed_on,is_completed').in('habit_id',ids);if(me)throw me;completions.clear();marks.forEach(x=>completions.set(x.habit_id+'|'+x.completed_on,x.is_completed));}
+ const {data:profile}=await supabase.auth.getUser();$('profile-email').textContent=profile.user?.email||'';$('profile-name').textContent=profile.user?.user_metadata?.full_name||'Мой профиль';
+ render();
+}
+async function signIn(){ $('google-login').disabled=true;$('login-msg').textContent='Подключаем Google…';const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://romanbali.github.io/habit-plus/'}});if(error){$('login-msg').textContent=error.message;$('google-login').disabled=false;}}
+$('google-login').addEventListener('click',signIn);
+async function sessionChanged(session){
+ user=session?.user||null;$('login').style.display=user?'none':'flex';
+ if(!user)return;
+ try{await loadData();}catch(e){console.error(e);$('login-msg').textContent='Ошибка синхронизации: '+e.message;$('login').style.display='flex';}
+}
+supabase.auth.onAuthStateChange((event,session)=>{setTimeout(()=>sessionChanged(session),0);});
+const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+if(sessionError)$('login-msg').textContent=sessionError.message;else await sessionChanged(sessionData.session);
 </script>
-</body>
-</html>
+</body></html>
