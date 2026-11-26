@@ -159,6 +159,15 @@ function updateStats(){
  $('profile-count').textContent=habits.length;let n=0;completions.forEach(v=>{if(v===true)n++;});$('profile-done').textContent=n;
 }
 async function persistStatus(hid,date,value){setStatusLocal(hid,date,value);saveLocal();render();}
+$('carousel').addEventListener('click',e=>{
+ const button=e.target.closest('.day-state[data-date][data-habit]');
+ if(!button)return;
+ const date=fromKey(button.dataset.date),hid=button.dataset.habit;
+ if(dateKey(date)>dateKey(new Date()))return;
+ const current=getStatus(hid,date);
+ const next=current===true?false:current===false?null:true;
+ persistStatus(hid,date,next);
+});
 function openModal(id){$(id).classList.add('open');}
 function closeModal(id){$(id).classList.remove('open');}
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
