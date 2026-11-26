@@ -147,7 +147,7 @@ function openHabit(id){const h=id?habits.find(x=>x.id===id):null;$('habit-modal-
 $('habit-form').addEventListener('submit',async e=>{
  e.preventDefault();const id=$('habit-id').value,name=$('habit-name').value.trim(),description=$('habit-desc').value.trim(),icon=$('habit-icon').value.trim()||'✨';if(!name)return;
  try{
-  if(id){const h=habits.find(x=>x.id===id);const habit_key=h.habit_key.startsWith('custom:')?'custom:'+encodeURIComponent(icon)+':'+encodeURIComponent(description):h.habit_key;const {error}=await supabase.from('habits').update({name,habit_key}).eq('id',id).eq('user_id',user.id);if(error)throw error;h.name=name;h.description=description;h.icon=icon;h.habit_key=habit_key;}
+  if(id){const h=habits.find(x=>x.id===id);const habit_key='custom:'+encodeURIComponent(icon)+':'+encodeURIComponent(description);const {error}=await supabase.from('habits').update({name,habit_key}).eq('id',id).eq('user_id',user.id);if(error)throw error;h.name=name;h.description=description;h.icon=icon;h.habit_key=habit_key;}
   else{const {data,error}=await supabase.from('habits').insert({user_id:user.id,name,habit_key:'custom:'+encodeURIComponent(icon)+':'+encodeURIComponent(description),sort_order:habits.length}).select().single();if(error)throw error;habits.push({...data,description,icon});active=habits.length-1;}
   closeModal('habit-modal');render();
  }catch(err){console.error(err);alert('Не удалось сохранить привычку: '+err.message);}
